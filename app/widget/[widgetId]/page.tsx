@@ -46,6 +46,7 @@ export default function WidgetPage({ params }: { params?: { widgetId?: string } 
   const [userName, setUserName] = useState<string | null>(null);
   const [isAskingName, setIsAskingName] = useState(true);
 
+  /** Defaults used only after load fails; UI stays on skeleton until settings resolve to avoid FOUC */
   const [widgetSettings, setWidgetSettings] = useState<WidgetSettings>({
     chatbotName: "AI Assistant",
     chatbotAvatar: null,
@@ -54,7 +55,11 @@ export default function WidgetPage({ params }: { params?: { widgetId?: string } 
     language: "en",
   });
 
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
   useEffect(() => {
+    let cancelled = false;
+
     const fetchSettings = async () => {
       try {
         const API_URL =
@@ -62,7 +67,7 @@ export default function WidgetPage({ params }: { params?: { widgetId?: string } 
 
         const response = await fetch(`${API_URL}/settings/widget/${widgetId}`);
 
-        if (response.ok) {
+        if (!cancelled && response.ok) {
           const data = await response.json();
 
           if (data.success && data.data) {
@@ -82,10 +87,18 @@ export default function WidgetPage({ params }: { params?: { widgetId?: string } 
         }
       } catch (error) {
         console.error("Failed to fetch widget settings:", error);
+      } finally {
+        if (!cancelled) {
+          setSettingsLoaded(true);
+        }
       }
     };
 
     fetchSettings();
+
+    return () => {
+      cancelled = true;
+    };
   }, [widgetId]);
 
   useEffect(() => {
@@ -97,17 +110,16 @@ export default function WidgetPage({ params }: { params?: { widgetId?: string } 
   }, [searchParams]);
 
   useEffect(() => {
-    if (isAskingName) {
-      setMessages([
-        {
-          id: "welcome",
-          sender: "bot",
-          content: widgetSettings.welcomeMessage,
-          timestamp: new Date().toISOString(),
-        },
-      ]);
-    }
-  }, [widgetSettings.welcomeMessage]);
+    if (!settingsLoaded || !isAskingName) return;
+    setMessages([
+      {
+        id: "welcome",
+        sender: "bot",
+        content: widgetSettings.welcomeMessage,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+  }, [settingsLoaded, widgetSettings.welcomeMessage, isAskingName]);
 
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
@@ -236,6 +248,38 @@ export default function WidgetPage({ params }: { params?: { widgetId?: string } 
   };
 
   if (!isOpen) return null;
+
+  /** Skeleton only — no placeholder title/welcome so configured UI never flashes */
+  if (!settingsLoaded) {
+    return (
+      <div
+        className={
+          isEmbedded
+            ? "w-full min-h-dvh bg-white dark:bg-gray-900"
+            : "fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        }
+        aria-busy="true"
+        aria-label="Loading chat widget"
+      >
+        <div
+          className={
+            isEmbedded
+              ? "w-full min-h-dvh bg-white dark:bg-gray-900 flex flex-col"
+              : "w-full max-w-md h-[600px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          }
+        >
+          <div className="h-[72px] bg-muted animate-pulse" />
+          <div className="flex-1 bg-gray-50 dark:bg-gray-800 p-4">
+            <div className="h-24 max-w-[80%] rounded-2xl bg-muted animate-pulse" />
+          </div>
+          <div className="p-4 border-t border-border/60 flex gap-2 shrink-0">
+            <div className="flex-1 h-11 rounded-xl bg-muted animate-pulse" />
+            <div className="w-11 h-11 rounded-xl bg-muted animate-pulse shrink-0" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isMinimized && !isEmbedded) {
     return (
