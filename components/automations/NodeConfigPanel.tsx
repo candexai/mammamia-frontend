@@ -272,7 +272,8 @@ export function NodeConfigPanel({
     const vals = node.config.values || [];
     if (sheetHeaders.length > 0) {
       const idx = vals.findIndex(
-        (v, i) => i < sheetHeaders.length && (!v || !String(v).trim())
+        (v: unknown, i: number) =>
+          i < sheetHeaders.length && (!v || !String(v).trim())
       );
       const target = idx >= 0 ? idx : 0;
       updateColumnMapping(target, varName);
@@ -327,7 +328,7 @@ export function NodeConfigPanel({
           if (headers.length > 0) {
             const vals = nodeRef.current.config.values || [];
             if (vals.length === 0 || vals.length !== headers.length) {
-              const merged = headers.map((_, i) => vals[i] ?? "");
+              const merged = headers.map((_: string, i: number) => vals[i] ?? "");
               onUpdate({
                 ...nodeRef.current.config,
                 spreadsheetId: sid,
