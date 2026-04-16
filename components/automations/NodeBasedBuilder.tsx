@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle, useRef } from "react";
 import { Plus, List, Trash2, Check, Zap, X, ArrowLeft, Loader2 } from "lucide-react";
 import { Automation, AutomationNode as NodeType, nodeServices } from "@/data/mockAutomations";
 import { AutomationNode } from "./AutomationNode";
@@ -11,21 +11,41 @@ import { ExecutionsModal } from "./ExecutionsModal";
 import { apiClient } from "@/lib/api";
 import { toast } from "@/lib/toast";
 
+export type AutomationBuilderSelection = {
+  selectedAutomationId: string | null;
+  selectedNodeId: string | null;
+};
+
 interface NodeBasedBuilderProps {
   automations: Automation[];
   onAutomationsChange?: (automations: Automation[]) => void;
+  /** Report selection changes so the page can persist session (scroll/selection survive navigation). */
+  onSelectionChange?: (selection: AutomationBuilderSelection) => void;
+  /** Called after a successful Save so session dirty state can clear. */
+  onSaved?: () => void;
+  /** Applied once when automations are available (e.g. restore from session). */
+  defaultSelection?: AutomationBuilderSelection | null;
+  /** Bumps when the page finishes a fresh list load so selection restore can run again. */
+  selectionRevision?: number;
 }
 
 export interface NodeBasedBuilderRef {
   handleNewAutomation: () => void;
 }
 
-export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilderProps>(({ automations: initialAutomations, onAutomationsChange }, ref) => {
+export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilderProps>(({ automations: initialAutomations, onAutomationsChange, onSelectionChange, onSaved, defaultSelection, selectionRevision = 0 }, ref) => {
   const [automations, setAutomations] = useState(initialAutomations);
-  const [selectedAutomationId, setSelectedAutomationId] = useState<string | null>(
-    initialAutomations[0]?.id || null
+  const [selectedAutomationId, setSelectedAutomationId] = useState<string | null>(() =>
+    defaultSelection?.selectedAutomationId ?? initialAutomations[0]?.id ?? null
   );
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(
+    () => defaultSelection?.selectedNodeId ?? null
+  );
+  const consumedDefaultSelection = useRef(false);
+
+  useEffect(() => {
+    consumedDefaultSelection.current = false;
+  }, [selectionRevision]);
   const [showNodeSelector, setShowNodeSelector] = useState(false);
   const [insertPosition, setInsertPosition] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -40,6 +60,29 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
       setSelectedAutomationId(initialAutomations[0].id);
     }
   }, [initialAutomations]);
+
+  // One-shot restore of selection from session (after API + merge lists are ready)
+  useEffect(() => {
+    if (consumedDefaultSelection.current || !defaultSelection || initialAutomations.length === 0) {
+      return;
+    }
+    const aid = defaultSelection.selectedAutomationId;
+    const nid = defaultSelection.selectedNodeId;
+    if (aid && initialAutomations.some((a) => a.id === aid)) {
+      setSelectedAutomationId(aid);
+      const auto = initialAutomations.find((a) => a.id === aid);
+      if (nid && auto?.nodes.some((n) => n.id === nid)) {
+        setSelectedNodeId(nid);
+      } else {
+        setSelectedNodeId(null);
+      }
+    }
+    consumedDefaultSelection.current = true;
+  }, [defaultSelection, initialAutomations, selectionRevision]);
+
+  useEffect(() => {
+    onSelectionChange?.({ selectedAutomationId, selectedNodeId });
+  }, [selectedAutomationId, selectedNodeId, onSelectionChange]);
 
   // Helper function to update automations and notify parent
   const updateAutomations = (newAutomations: Automation[]) => {
@@ -362,6 +405,7 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
       );
 
       toast.success("Automation saved successfully");
+      onSaved?.();
     } catch (error: any) {
       console.error("Save error:", error);
       toast.error("Failed to save automation");
