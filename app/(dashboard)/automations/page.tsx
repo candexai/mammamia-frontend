@@ -18,25 +18,6 @@ export default function AutomationsPage() {
   const [loading, setLoading] = useState(true);
   const [showPrebuiltModal, setShowPrebuiltModal] = useState(false);
   const nodeBuilderRef = useRef<{ handleNewAutomation: () => void }>(null);
-  const [showLoader, setShowLoader] = useState(true);
-  const startTimeRef = useRef(Date.now());
-
-  useEffect(() => {
-    if (!loading) {
-      // Ensure loader stays for at least 2.5 seconds
-      const elapsed = Date.now() - startTimeRef.current;
-      const minDisplayTime = 2500; // 2.5 seconds
-      const remainingTime = Math.max(0, minDisplayTime - elapsed);
-      
-      setTimeout(() => {
-        setShowLoader(false);
-      }, remainingTime);
-    } else {
-      setShowLoader(true);
-      startTimeRef.current = Date.now();
-    }
-  }, [loading]);
-
   // Set CSS variable for sidebar width so modal can use it
   useEffect(() => {
     document.documentElement.style.setProperty('--sidebar-width', `${getSidebarWidth()}px`);
@@ -96,7 +77,7 @@ export default function AutomationsPage() {
     }
   };
 
-  if (loading || showLoader) {
+  if (loading) {
     return (
       <div className="fixed inset-0 flex flex-col transition-all duration-300" style={{ left: `${getSidebarWidth()}px` }}>
         <div className="h-20 px-8 flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/5 via-primary/3 to-transparent backdrop-blur-sm shadow-sm flex-shrink-0 z-10">

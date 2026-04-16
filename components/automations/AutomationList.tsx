@@ -1,6 +1,7 @@
 import { Search, Plus, Zap } from "lucide-react";
-import { Automation } from "@/data/mockAutomations";
+import { Automation, nodeServices } from "@/data/mockAutomations";
 import { cn } from "@/lib/utils";
+import { useMemo, useState } from "react";
 
 interface AutomationListProps {
   automations: Automation[];
@@ -9,41 +10,72 @@ interface AutomationListProps {
   onNew: () => void;
 }
 
+function automationServiceLabel(serviceId: string) {
+  if (serviceId === "delay") return "Delay";
+  const all = [...nodeServices.triggers, ...nodeServices.actions];
+  const found = all.find((s) => s.id === serviceId);
+  if (found) return found.name;
+  return serviceId
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function automationPreviewText(automation: Automation) {
+  return automation.nodes.map((node) => automationServiceLabel(node.service)).join(" → ");
+}
+
 export function AutomationList({
   automations,
   selectedId,
   onSelect,
   onNew,
 }: AutomationListProps) {
-  const getPreviewText = (automation: Automation) => {
-    const nodeNames = automation.nodes.map((node) => {
-      if (node.service === "delay") return "Delay";
-      return node.service
-        .split("_")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredAutomations = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return automations;
+    return automations.filter((a) => {
+      const preview = automationPreviewText(a);
+      return (
+        a.name.toLowerCase().includes(q) ||
+        preview.toLowerCase().includes(q)
+      );
     });
-    return nodeNames.join(" → ");
-  };
+  }, [automations, searchQuery]);
 
   return (
     <div className="w-[360px] bg-card border-r border-border h-full flex flex-col shadow-xl">
       {/* Header - Simplified */}
-      <div className="p-6 border-b border-border bg-gradient-to-br from-card to-card/50">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search automations..."
-            className="w-full h-11 bg-background/80 border border-border rounded-xl pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
-          />
+      <div className="p-6 border-b border-border bg-gradient-to-br from-card to-card/50 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search automations..."
+              className="w-full h-11 bg-background/80 border border-border rounded-xl pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
+              aria-label="Search automations"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onNew}
+            className="shrink-0 h-11 px-3 rounded-xl border border-border bg-background/80 text-sm font-medium text-foreground hover:bg-accent hover:border-primary/30 transition-colors flex items-center gap-1.5"
+            title="New automation"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">New</span>
+          </button>
         </div>
       </div>
 
       {/* Automation List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {automations.map((automation) => {
+        {filteredAutomations.map((automation) => {
           const isSelected = selectedId === automation.id;
           const isEnabled = automation.status === "enabled";
           
@@ -70,7 +102,7 @@ export function AutomationList({
                     "text-xs truncate",
                     isSelected ? "text-primary/70" : "text-muted-foreground"
                   )}>
-                    {getPreviewText(automation) || "No nodes configured"}
+                    {automationPreviewText(automation) || "No nodes configured"}
                   </p>
                 </div>
                 <div className={cn(
@@ -98,6 +130,12 @@ export function AutomationList({
             </button>
           );
         })}
+
+        {automations.length > 0 && filteredAutomations.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8 px-2">
+            No automations match &quot;{searchQuery.trim()}&quot;
+          </p>
+        )}
         
         {automations.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full px-6 text-center py-12">

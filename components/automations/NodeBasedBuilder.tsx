@@ -131,13 +131,16 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
     let finalConfig = { ...config };
     const node = selectedAutomation.nodes.find(n => n.id === selectedNodeId);
 
-    if (node?.service === "aistein_google_sheet_append_row") {
-      // Ensure values array is properly formatted
+    if (
+      node?.service === "aistein_google_sheet_append_row" ||
+      node?.service === "aistein_user_google_sheet_append_row"
+    ) {
+      // Keep empty strings so column indices stay aligned with the sheet
       if (finalConfig.values && Array.isArray(finalConfig.values)) {
-        // Filter out empty values but preserve array structure
-        finalConfig.values = finalConfig.values.filter((v: string) => v && typeof v === 'string' && v.trim() !== "");
+        finalConfig.values = finalConfig.values.map((v: string) =>
+          typeof v === "string" ? v : String(v ?? "")
+        );
       } else {
-        // Ensure values is always an array
         finalConfig.values = [];
       }
 
@@ -180,10 +183,18 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
     if (!selectedAutomation) return true;
 
     // Check if any Google Sheets node is incomplete
-    const incompleteNode = selectedAutomation.nodes.find(node => {
-      if (node.service === "aistein_google_sheet_append_row") {
+    const incompleteNode = selectedAutomation.nodes.find((node) => {
+      if (
+        node.service === "aistein_google_sheet_append_row" ||
+        node.service === "aistein_user_google_sheet_append_row"
+      ) {
         const hasSpreadsheetId = !!(node.config.spreadsheetId && node.config.spreadsheetId.trim() !== "");
-        const hasValues = !!(node.config.values && Array.isArray(node.config.values) && node.config.values.length > 0 && node.config.values.some((v: string) => v && v.trim() !== ""));
+        const hasValues = !!(
+          node.config.values &&
+          Array.isArray(node.config.values) &&
+          node.config.values.length > 0 &&
+          node.config.values.some((v: string) => v && String(v).trim() !== "")
+        );
         return !hasSpreadsheetId || !hasValues;
       }
       return false;
@@ -298,10 +309,13 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
       const backendNodes = selectedAutomation.nodes.map(node => {
         let config = { ...node.config };
 
-        if (node.service === "aistein_google_sheet_append_row") {
+        if (
+          node.service === "aistein_google_sheet_append_row" ||
+          node.service === "aistein_user_google_sheet_append_row"
+        ) {
           if (config.values && Array.isArray(config.values)) {
-            config.values = config.values.filter(
-              (v: string) => v && typeof v === "string" && v.trim() !== ""
+            config.values = config.values.map((v: string) =>
+              typeof v === "string" ? v : String(v ?? "")
             );
           } else {
             config.values = [];
@@ -526,7 +540,7 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
                     No steps configured
                   </h3>
                   <p className="text-sm text-muted-foreground mb-6">
-                    Click the button above to add your first automation step
+                    Use <span className="font-medium text-foreground/90">Add first step</span> or the + between steps to build your workflow
                   </p>
                   <button
                     onClick={() => handleAddNode(0)}
@@ -633,7 +647,7 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
                   <span>Back</span>
                 </button>
                 <h3 className="text-lg font-semibold text-foreground">
-                  Add Action
+                  {insertPosition === 0 ? "Add trigger" : "Add step"}
                 </h3>
                 <button
                   onClick={() => {
