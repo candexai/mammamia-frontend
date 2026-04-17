@@ -72,6 +72,8 @@ class ConversationService {
           lastMessageText = 'Processing call transcript...';
         }
         
+        const updated =
+          conv.updatedAt || conv.lastMessage?.timestamp || conv.createdAt;
         return {
           id: conv._id || conv.id,
           customer: {
@@ -84,7 +86,11 @@ class ConversationService {
           channel: conv.channel,
           status: conv.status,
           lastMessage: lastMessageText,
-          timestamp: conv.updatedAt || conv.createdAt || new Date().toISOString(),
+          timestamp:
+            (typeof updated === "string"
+              ? updated
+              : updated && new Date(updated as string | number | Date).toISOString()) ||
+            new Date().toISOString(),
           unread: conv.unread || false,
           labels: conv.labels || [],
           folder: conv.folderId || null,
@@ -94,6 +100,11 @@ class ConversationService {
           isBookmarked: conv.isBookmarked || false,
         };
       });
+
+      // Defensive: newest first (backend already sorts by updatedAt; keeps UI consistent if order drifts)
+      conversations.sort((a: { timestamp: string }, b: { timestamp: string }) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
       
       const pagination = response.data?.pagination || {};
       

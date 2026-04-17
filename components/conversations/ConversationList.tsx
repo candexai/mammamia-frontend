@@ -55,11 +55,16 @@ export function ConversationList({
       filtered = filtered.filter((conv) => conv.status === statusFilter);
     }
 
-    // Apply sorting
+    const timeMs = (t: string) => {
+      const n = new Date(t).getTime();
+      return Number.isNaN(n) ? 0 : n;
+    };
+
+    // Apply sorting (latest first for "recent")
     if (sortBy === "recent") {
-      filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      filtered.sort((a, b) => timeMs(b.timestamp) - timeMs(a.timestamp));
     } else if (sortBy === "oldest") {
-      filtered.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      filtered.sort((a, b) => timeMs(a.timestamp) - timeMs(b.timestamp));
     } else if (sortBy === "unread") {
       filtered.sort((a, b) => (b.unread ? 1 : 0) - (a.unread ? 1 : 0));
     }

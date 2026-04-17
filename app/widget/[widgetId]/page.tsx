@@ -43,15 +43,15 @@ export default function WidgetPage({ params }: { params?: { widgetId?: string } 
   const [isOpen, setIsOpen] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
+  /** Set when opened with ?visitorName= (e.g. Chatbot Test → Open in New Tab) — sent with chat requests */
   const [userName, setUserName] = useState<string | null>(null);
-  const [isAskingName, setIsAskingName] = useState(true);
 
   /** Defaults used only after load fails; UI stays on skeleton until settings resolve to avoid FOUC */
   const [widgetSettings, setWidgetSettings] = useState<WidgetSettings>({
     chatbotName: "AI Assistant",
     chatbotAvatar: null,
     primaryColor: "#6366f1",
-    welcomeMessage: "👋 Hello! Before we start, may I know your name?",
+    welcomeMessage: "Hello! How can I help you today?",
     language: "en",
   });
 
@@ -79,8 +79,8 @@ export default function WidgetPage({ params }: { params?: { widgetId?: string } 
               primaryColor: data.data.primaryColor || "#6366f1",
               welcomeMessage:
                 data.data.welcomeMessage ||
-                widgetTranslations[lang]?.askName ||
-                widgetTranslations.en.askName,
+                widgetTranslations[lang]?.welcomeDefault ||
+                widgetTranslations.en.welcomeDefault,
               language: lang,
             });
           }
@@ -109,61 +109,46 @@ export default function WidgetPage({ params }: { params?: { widgetId?: string } 
     }
   }, [searchParams]);
 
+  const visitorNameFromUrl = searchParams.get("visitorName")?.trim() || null;
+
   useEffect(() => {
-    if (!settingsLoaded || !isAskingName) return;
-    setMessages([
-      {
-        id: "welcome",
-        sender: "bot",
-        content: widgetSettings.welcomeMessage,
-        timestamp: new Date().toISOString(),
-      },
-    ]);
-  }, [settingsLoaded, widgetSettings.welcomeMessage, isAskingName]);
+    setUserName(visitorNameFromUrl);
+  }, [visitorNameFromUrl]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isSending) return;
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    const lang = widgetSettings.language || "en";
+    const t = widgetTranslations[lang] ?? widgetTranslations.en;
 
-    if (isAskingName) {
-      const name = input;
-
-      setUserName(name);
-      setIsAskingName(false);
-
-      setMessages((prev) => [
-        ...prev,
+    if (visitorNameFromUrl) {
+      const greeting = t.afterName.replace(/\{name\}/g, visitorNameFromUrl);
+      setMessages([
         {
-          id: Date.now().toString(),
-          sender: "user",
-          content: name,
+          id: "welcome",
+          sender: "bot",
+          content: greeting,
           timestamp: new Date().toISOString(),
         },
       ]);
-
-      setInput("");
-
-      setTimeout(() => {
-        const lang = widgetSettings.language || "en";
-        const afterNameTemplate =
-          widgetTranslations[lang]?.afterName ??
-          widgetTranslations.en.afterName;
-        const afterNameMessage = afterNameTemplate.replace(
-          /\{name\}/g,
-          name.trim()
-        );
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            sender: "bot",
-            content: afterNameMessage,
-            timestamp: new Date().toISOString(),
-          },
-        ]);
-      }, 500);
-
-      return;
+    } else {
+      setMessages([
+        {
+          id: "welcome",
+          sender: "bot",
+          content: widgetSettings.welcomeMessage,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
     }
+  }, [
+    settingsLoaded,
+    widgetSettings.welcomeMessage,
+    widgetSettings.language,
+    visitorNameFromUrl,
+  ]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isSending) return;
 
     const userQuery = input;
 
@@ -193,6 +178,7 @@ export default function WidgetPage({ params }: { params?: { widgetId?: string } 
             query: userQuery,
             threadId: threadId,
             ...(selectedCollection && { knowledgeBaseId: selectedCollection }),
+            ...(userName && { visitorName: userName }),
           }),
         }
       );
@@ -215,6 +201,38 @@ export default function WidgetPage({ params }: { params?: { widgetId?: string } 
           timestamp: new Date().toISOString(),
         },
       ]);
+
+      // Persist to inbox (Conversations list) — same endpoint as dashboard widget test
+      const displayName =
+        userName?.trim() ||
+        visitorNameFromUrl?.trim() ||
+        "Visitor";
+      const API_BASE =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+      void fetch(`${API_BASE}/conversations/widget`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          widgetId,
+          name: displayName,
+          threadId,
+          ...(selectedCollection && { collection: selectedCollection }),
+          messages: [
+            {
+              role: "user",
+              content: userQuery,
+              timestamp: new Date().toISOString(),
+            },
+            {
+              role: "assistant",
+              content: answer,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        }),
+      }).catch((err) =>
+        console.warn("[Widget] Could not sync conversation to inbox:", err)
+      );
     } catch (error) {
       console.error(error);
     } finally {

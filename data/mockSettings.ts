@@ -77,13 +77,21 @@ export const presetColors = [
 
 export const widgetTranslations: Record<
   string,
-  { online: string; placeholder: string; ready: string; askName: string; afterName: string }
+  {
+    online: string;
+    placeholder: string;
+    ready: string;
+    askName: string;
+    welcomeDefault: string;
+    afterName: string;
+  }
 > = {
   en: {
     online: "Online",
     placeholder: "Type your message...",
     ready: "Ready to help",
     askName: "👋 Hello! Before we start, may I know your name?",
+    welcomeDefault: "Hello! How can I help you today?",
     afterName: "Nice to meet you, {name}! How can I help you today?",
   },
   es: {
@@ -91,6 +99,7 @@ export const widgetTranslations: Record<
     placeholder: "Escribe tu mensaje...",
     ready: "Listo para ayudar",
     askName: "👋 ¡Hola! Antes de empezar, ¿puedo saber tu nombre?",
+    welcomeDefault: "¡Hola! ¿En qué puedo ayudarte hoy?",
     afterName: "¡Encantado de conocerte, {name}! ¿En qué puedo ayudarte hoy?",
   },
   fr: {
@@ -98,6 +107,7 @@ export const widgetTranslations: Record<
     placeholder: "Tapez votre message...",
     ready: "Prêt à aider",
     askName: "👋 Bonjour! Avant de commencer, puis-je connaître votre nom?",
+    welcomeDefault: "Bonjour ! Comment puis-je vous aider aujourd'hui ?",
     afterName: "Ravi de vous rencontrer, {name} ! Comment puis-je vous aider aujourd'hui ?",
   },
   de: {
@@ -105,6 +115,7 @@ export const widgetTranslations: Record<
     placeholder: "Nachricht eingeben...",
     ready: "Bereit zu helfen",
     askName: "👋 Hallo! Bevor wir beginnen, darf ich Ihren Namen erfahren?",
+    welcomeDefault: "Hallo! Wie kann ich dir heute helfen?",
     afterName: "Schön, dich kennenzulernen, {name}! Wie kann ich dir heute helfen?",
   },
   it: {
@@ -112,6 +123,7 @@ export const widgetTranslations: Record<
     placeholder: "Scrivi il tuo messaggio...",
     ready: "Pronto ad aiutare",
     askName: "👋 Ciao! Prima di iniziare, posso sapere come ti chiami?",
+    welcomeDefault: "Ciao! Come posso aiutarti oggi?",
     afterName: "Piacere di conoscerti, {name}! Come posso aiutarti oggi?",
   },
   pt: {
@@ -119,6 +131,7 @@ export const widgetTranslations: Record<
     placeholder: "Digite sua mensagem...",
     ready: "Pronto para ajudar",
     askName: "👋 Olá! Antes de começarmos, posso saber seu nome?",
+    welcomeDefault: "Olá! Como posso ajudar hoje?",
     afterName: "Prazer em conhecer você, {name}! Como posso ajudar hoje?",
   },
   ar: {
@@ -126,6 +139,7 @@ export const widgetTranslations: Record<
     placeholder: "اكتب رسالتك...",
     ready: "جاهز للمساعدة",
     askName: "👋 مرحباً! قبل أن نبدأ، هل يمكنني معرفة اسمك؟",
+    welcomeDefault: "مرحباً! كيف يمكنني مساعدتك اليوم؟",
     afterName: "تشرفنا بمعرفتك، {name}! كيف يمكنني مساعدتك اليوم؟",
   },
   tr: {
@@ -133,6 +147,7 @@ export const widgetTranslations: Record<
     placeholder: "Mesajınızı yazın...",
     ready: "Yardıma hazır",
     askName: "👋 Merhaba! Başlamadan önce isminizi öğrenebilir miyim?",
+    welcomeDefault: "Merhaba! Bugün size nasıl yardımcı olabilirim?",
     afterName: "Tanıştığımıza memnun oldum, {name}! Bugün size nasıl yardımcı olabilirim?",
   },
   zh: {
@@ -140,6 +155,7 @@ export const widgetTranslations: Record<
     placeholder: "输入您的消息...",
     ready: "随时为您服务",
     askName: "👋 你好！在开始之前，我可以知道你的名字吗？",
+    welcomeDefault: "你好！今天我能帮你什么？",
     afterName: "很高兴认识你，{name}！今天我能帮你什么？",
   },
   ja: {
@@ -147,6 +163,7 @@ export const widgetTranslations: Record<
     placeholder: "メッセージを入力...",
     ready: "ご支援します",
     askName: "👋 こんにちは！始める前に、お名前を教えていただけますか？",
+    welcomeDefault: "こんにちは！本日はどのようなご用件でしょうか？",
     afterName: "はじめまして、{name}さん！本日はどのようなご用件でしょうか？",
   },
   ko: {
@@ -154,6 +171,7 @@ export const widgetTranslations: Record<
     placeholder: "메시지를 입력하세요...",
     ready: "도와드릴 준비가 되었습니다",
     askName: "👋 안녕하세요! 시작하기 전에 성함을 알려주시겠습니까?",
+    welcomeDefault: "안녕하세요! 오늘 무엇을 도와드릴까요?",
     afterName: "만나서 반가워요, {name}님! 오늘 무엇을 도와드릴까요?",
   },
 };
