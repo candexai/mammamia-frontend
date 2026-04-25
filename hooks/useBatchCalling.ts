@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { batchCallingService, BatchCallRequest, BatchCallResponse, BatchJobCallsResponse } from '@/services/batchCalling.service';
+import { batchCallingService, BatchCallRequest, BatchCallResponse, BatchJobCallsResponse, BatchJobDetailsResponse } from '@/services/batchCalling.service';
 import { toast } from 'sonner';
 
 /**
@@ -57,6 +57,22 @@ export function useCancelBatchJob() {
 }
 
 /**
+ * Resume batch job mutation
+ */
+export function useResumeBatchJob() {
+  return useMutation({
+    mutationFn: (jobId: string) => batchCallingService.resumeBatchJob(jobId),
+    onSuccess: (data) => {
+      toast.success(data.message || 'Batch job resumed successfully');
+    },
+    onError: (error: any) => {
+      console.error('❌ [useResumeBatchJob] Error:', error);
+      toast.error(error.message || 'Failed to resume batch job');
+    },
+  });
+}
+
+/**
  * Get all batch calls query
  */
 export function useBatchCalls() {
@@ -98,5 +114,17 @@ export function useBatchJobCalls(
     }),
     enabled: (options?.enabled !== false) && !!jobId,
     refetchInterval: 20000, // Refetch every 20 seconds
+  });
+}
+
+/**
+ * Get complete per-contact batch details
+ */
+export function useBatchJobDetails(jobId: string | null, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['batchJobDetails', jobId],
+    queryFn: () => batchCallingService.getBatchJobDetails(jobId!),
+    enabled: enabled && !!jobId,
+    refetchInterval: 15000,
   });
 }
