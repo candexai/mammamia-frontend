@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 declare global {
   interface Window {
     grecaptcha?: {
+      ready: (cb: () => void) => void;
       render: (
         container: HTMLElement,
         parameters: {
@@ -39,16 +40,60 @@ function loadRecaptchaScript(): Promise<void> {
   }
 
   window.__recaptchaScriptPromise = new Promise<void>((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load captcha script'));
-    document.head.appendChild(script);
+    const candidateUrls = [
+      'https://www.google.com/recaptcha/api.js?render=explicit',
+      'https://www.recaptcha.net/recaptcha/api.js?render=explicit'
+    ];
+    let index = 0;
+
+    const tryNext = () => {
+      if (index >= candidateUrls.length) {
+        reject(new Error('Failed to load captcha script'));
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = candidateUrls[index];
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => {
+        index += 1;
+        tryNext();
+      };
+      document.head.appendChild(script);
+    };
+
+    tryNext();
   });
 
-  return window.__recaptchaScriptPromise;
+  return window.__recaptchaScriptPromise.catch((error) => {
+    // Allow retry if script loading failed for transient/network blockers.
+    window.__recaptchaScriptPromise = undefined;
+    throw error;
+  });
+}
+
+function waitForRecaptchaReady(timeoutMs = 8000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+
+    const tick = () => {
+      if (window.grecaptcha?.render) {
+        resolve();
+        return;
+      }
+
+      if (Date.now() - start >= timeoutMs) {
+        reject(new Error('Captcha runtime unavailable'));
+        return;
+      }
+
+      setTimeout(tick, 100);
+    };
+
+    tick();
+  });
 }
 
 export function RecaptchaWidget({ onTokenChange }: RecaptchaWidgetProps) {
@@ -66,20 +111,34 @@ export function RecaptchaWidget({ onTokenChange }: RecaptchaWidgetProps) {
 
     const renderCaptcha = async () => {
       try {
+        setLoadError(null);
         await loadRecaptchaScript();
+        await waitForRecaptchaReady();
+
         if (!isMounted || !containerRef.current || !window.grecaptcha) {
           return;
         }
 
-        widgetIdRef.current = window.grecaptcha.render(containerRef.current, {
-          sitekey: siteKey,
-          callback: (token: string) => onTokenChange(token),
-          'expired-callback': () => onTokenChange(null),
-          'error-callback': () => onTokenChange(null),
-          theme: 'light'
+        window.grecaptcha.ready(() => {
+          if (!isMounted || !containerRef.current || !window.grecaptcha) {
+            return;
+          }
+
+          widgetIdRef.current = window.grecaptcha.render(containerRef.current, {
+            sitekey: siteKey,
+            callback: (token: string) => onTokenChange(token),
+            'expired-callback': () => onTokenChange(null),
+            'error-callback': () => onTokenChange(null),
+            theme: 'light'
+          });
         });
-      } catch {
-        setLoadError('Unable to load captcha. Please refresh and try again.');
+      } catch (error) {
+        const message = error instanceof Error ? error.message.toLowerCase() : '';
+        if (message.includes('invalid site key') || message.includes('site key')) {
+          setLoadError('Captcha site key is invalid for this domain. Please update NEXT_PUBLIC_RECAPTCHA_SITE_KEY.');
+          return;
+        }
+        setLoadError('Unable to load captcha. Disable blockers/VPN and try again.');
       }
     };
 
