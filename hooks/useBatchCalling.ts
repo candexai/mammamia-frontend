@@ -9,8 +9,23 @@ export function useSubmitBatchCall() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: BatchCallRequest) => batchCallingService.submitBatchCall(data),
-    onSuccess: (data: BatchCallResponse) => {
-      toast.success(`Batch call "${data.name}" submitted successfully! ${data.total_calls_scheduled} calls scheduled.`);
+    onSuccess: (data: unknown) => {
+      const response = data as {
+        total_batches_created?: number;
+        total_requested_recipients?: number;
+        name?: string;
+        total_calls_scheduled?: number;
+      };
+
+      if (response.total_batches_created && response.total_requested_recipients) {
+        toast.success(
+          `Batch call submitted in ${response.total_batches_created} batches for ${response.total_requested_recipients} recipients.`
+        );
+      } else if (response.name && typeof response.total_calls_scheduled === 'number') {
+        toast.success(`Batch call "${response.name}" submitted successfully! ${response.total_calls_scheduled} calls scheduled.`);
+      } else {
+        toast.success('Batch call submitted successfully.');
+      }
       // Immediately invalidate so the list fetches fresh data when it mounts
       queryClient.invalidateQueries({ queryKey: ['batchCalls'] });
     },
