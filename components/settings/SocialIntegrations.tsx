@@ -51,6 +51,14 @@ interface IntegrationConfig {
   wabaId?: string;
 }
 
+interface PendingPage {
+  id: string;
+  name: string;
+  category?: string;
+  instagramUsername?: string | null;
+  instagramAccountId?: string | null;
+}
+
 // Platform configuration - centralized to avoid UI logic leakage
 const PLATFORMS = {
   whatsapp: {
@@ -122,6 +130,14 @@ export default function SocialIntegrations() {
     show: boolean;
     platform: 'whatsapp' | 'instagram' | 'facebook';
   } | null>(null);
+  const [pendingPageSelection, setPendingPageSelection] = useState<{
+    show: boolean;
+    platform: 'instagram' | 'facebook';
+    session: string;
+    pages: PendingPage[];
+    loading: boolean;
+    selectingPageId: string | null;
+  } | null>(null);
 
   useEffect(() => {
     fetchIntegrations();
@@ -131,11 +147,15 @@ export default function SocialIntegrations() {
     const success = params.get('success');
     const error = params.get('error');
     const platform = params.get('platform');
+    const selectPage = params.get('select_page');
+    const session = params.get('session');
     
     if (success === 'true' && platform) {
       toast.success(`${platform.charAt(0).toUpperCase() + platform.slice(1)} connected successfully!`);
       window.history.replaceState({}, '', '/settings/socials');
       fetchIntegrations();
+    } else if (selectPage === 'true' && session && (platform === 'instagram' || platform === 'facebook')) {
+      loadPendingPages(platform, session);
     } else if (error && platform) {
       toast.error(`Failed to connect ${platform}: ${decodeURIComponent(error)}`);
       window.history.replaceState({}, '', '/settings/socials');
@@ -169,6 +189,62 @@ export default function SocialIntegrations() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPendingPages = async (platform: 'instagram' | 'facebook', session: string) => {
+    setPendingPageSelection({
+      show: true,
+      platform,
+      session,
+      pages: [],
+      loading: true,
+      selectingPageId: null
+    });
+
+    try {
+      const response = await apiClient.get(`/social-integrations/${platform}/pending-pages?session=${encodeURIComponent(session)}`);
+      const pages = response?.data?.pages || [];
+      setPendingPageSelection(prev => prev ? { ...prev, pages, loading: false } : prev);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error?.message ||
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to load pages';
+      toast.error(errorMessage);
+      window.history.replaceState({}, '', '/settings/socials');
+      setPendingPageSelection(null);
+    }
+  };
+
+  const selectPendingPage = async (pageId: string) => {
+    if (!pendingPageSelection) return;
+
+    setPendingPageSelection(prev => prev ? { ...prev, selectingPageId: pageId } : prev);
+    try {
+      const response = await apiClient.post(
+        `/social-integrations/${pendingPageSelection.platform}/select-page`,
+        {
+          sessionKey: pendingPageSelection.session,
+          pageId
+        }
+      );
+
+      if (response.success) {
+        toast.success(`${pendingPageSelection.platform.charAt(0).toUpperCase() + pendingPageSelection.platform.slice(1)} connected successfully!`);
+        setPendingPageSelection(null);
+        window.history.replaceState({}, '', '/settings/socials');
+        await fetchIntegrations();
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error?.message ||
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to connect selected page';
+      toast.error(errorMessage);
+      setPendingPageSelection(prev => prev ? { ...prev, selectingPageId: null } : prev);
     }
   };
 
@@ -1004,6 +1080,90 @@ export default function SocialIntegrations() {
         </div>
 
       </div>
+
+      {/* Pending page selection modal (OAuth flow with multiple pages) */}
+      {pendingPageSelection?.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-foreground">Select Page</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Choose which {pendingPageSelection.platform === 'facebook' ? 'Facebook Page' : 'Page/Instagram account'} to connect.
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPendingPageSelection(null);
+                    window.history.replaceState({}, '', '/settings/socials');
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {pendingPageSelection.loading ? (
+                <div className="py-8 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
+                  <p className="text-sm text-muted-foreground">Loading available pages...</p>
+                </div>
+              ) : pendingPageSelection.pages.length === 0 ? (
+                <div className="py-8 text-center">
+                  <p className="text-sm text-muted-foreground mb-4">No pages found in this session.</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setPendingPageSelection(null);
+                      window.history.replaceState({}, '', '/settings/socials');
+                    }}
+                  >
+                    Close
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingPageSelection.pages.map((page) => {
+                    const isSelecting = pendingPageSelection.selectingPageId === page.id;
+                    return (
+                      <div
+                        key={page.id}
+                        className="p-4 border border-border rounded-lg flex items-center justify-between gap-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground truncate">{page.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            ID: {page.id}
+                            {page.category ? ` • ${page.category}` : ''}
+                            {page.instagramUsername ? ` • @${page.instagramUsername}` : ''}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => selectPendingPage(page.id)}
+                          disabled={!!pendingPageSelection.selectingPageId}
+                          className="h-9"
+                        >
+                          {isSelecting ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Connecting...
+                            </>
+                          ) : (
+                            'Use this page'
+                          )}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Webhook Configuration Modal */}
       {webhookConfig && webhookConfig.show && (
