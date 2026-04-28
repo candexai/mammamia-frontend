@@ -138,6 +138,12 @@ export default function SocialIntegrations() {
     loading: boolean;
     selectingPageId: string | null;
   } | null>(null);
+  const [showWhatsAppTestModal, setShowWhatsAppTestModal] = useState(false);
+  const [whatsAppTestNumber, setWhatsAppTestNumber] = useState('');
+  const [whatsAppTemplates, setWhatsAppTemplates] = useState<any[]>([]);
+  const [selectedWhatsAppTemplate, setSelectedWhatsAppTemplate] = useState('');
+  const [loadingWhatsAppTemplates, setLoadingWhatsAppTemplates] = useState(false);
+  const [sendingWhatsAppTest, setSendingWhatsAppTest] = useState(false);
 
   useEffect(() => {
     fetchIntegrations();
@@ -353,6 +359,98 @@ export default function SocialIntegrations() {
       console.error('Error disconnecting platform:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to disconnect';
       toast.error(errorMessage);
+    }
+  };
+
+  const fetchWhatsAppTemplatesForTest = async () => {
+    setLoadingWhatsAppTemplates(true);
+    try {
+      const response: any = await apiClient.get('/whatsapp/templates');
+      const templates = response?.data?.data || response?.data || [];
+      const approvedTemplates = Array.isArray(templates)
+        ? templates.filter((template: any) => template?.status === 'APPROVED')
+        : [];
+
+      setWhatsAppTemplates(approvedTemplates);
+
+      if (approvedTemplates.length === 0) {
+        toast.error('No approved WhatsApp templates found. Please create and approve a template in Meta first.');
+        return false;
+      }
+
+      const firstTemplate = approvedTemplates[0];
+      setSelectedWhatsAppTemplate(`${firstTemplate.name}::${firstTemplate.language}`);
+      return true;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error?.message ||
+        error.message ||
+        'Failed to load WhatsApp templates';
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoadingWhatsAppTemplates(false);
+    }
+  };
+
+  const openWhatsAppTestModal = async () => {
+    const integration = integrations.whatsapp;
+    if (!integration || integration.status !== 'connected') {
+      toast.error('Connect WhatsApp first to send a test message.');
+      return;
+    }
+
+    setShowWhatsAppTestModal(true);
+    setWhatsAppTestNumber('');
+    setWhatsAppTemplates([]);
+    setSelectedWhatsAppTemplate('');
+    await fetchWhatsAppTemplatesForTest();
+  };
+
+  const sendWhatsAppTestMessage = async () => {
+    if (!whatsAppTestNumber.trim()) {
+      toast.error('Please enter a WhatsApp number.');
+      return;
+    }
+
+    if (!selectedWhatsAppTemplate) {
+      toast.error('Please select a template.');
+      return;
+    }
+
+    const sanitizedNumber = whatsAppTestNumber.trim();
+    const selectedTemplate = whatsAppTemplates.find(
+      (template: any) => `${template.name}::${template.language}` === selectedWhatsAppTemplate
+    );
+
+    if (!selectedTemplate) {
+      toast.error('Selected template not found. Please reload templates.');
+      return;
+    }
+
+    setSendingWhatsAppTest(true);
+    try {
+      const response: any = await apiClient.post('/whatsapp/send-template', {
+        to: sanitizedNumber,
+        templateName: selectedTemplate.name,
+        languageCode: selectedTemplate.language,
+        phoneNumberId: integrations.whatsapp?.credentials?.phoneNumberId
+      });
+
+      if (response?.success) {
+        toast.success(`Test message sent successfully${response?.message_id ? ` (ID: ${response.message_id})` : ''}`);
+        setShowWhatsAppTestModal(false);
+      } else {
+        toast.error('Failed to send test message.');
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error?.message ||
+        error.message ||
+        'Failed to send WhatsApp test message';
+      toast.error(errorMessage);
+    } finally {
+      setSendingWhatsAppTest(false);
     }
   };
 
@@ -951,6 +1049,16 @@ export default function SocialIntegrations() {
               </>
             ) : (
               <div className="flex flex-wrap gap-2.5">
+                {platform === 'whatsapp' && (
+                  <Button
+                    onClick={openWhatsAppTestModal}
+                    variant="outline"
+                    className="flex-1 min-w-[140px] sm:min-w-[160px] h-10 sm:h-11 text-sm font-medium border-2 hover:bg-accent transition-all"
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Test WhatsApp</span>
+                  </Button>
+                )}
                 {(platform === 'instagram' || platform === 'facebook') && (
                   <Button
                     onClick={async () => {
@@ -1353,6 +1461,106 @@ export default function SocialIntegrations() {
                     Open Meta Dashboard
                   </Button>
                 </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* WhatsApp Test Modal */}
+      {showWhatsAppTestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <Card className="w-full max-w-lg mx-4">
+            <div className="p-6 space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-foreground">Test WhatsApp</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Send a template message to verify your WhatsApp integration.
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowWhatsAppTestModal(false)}
+                  className="h-8 w-8 p-0"
+                  disabled={sendingWhatsAppTest}
+                >
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp-test-number">WhatsApp Number</Label>
+                <Input
+                  id="whatsapp-test-number"
+                  value={whatsAppTestNumber}
+                  onChange={(e) => setWhatsAppTestNumber(e.target.value)}
+                  placeholder="+919876543210"
+                  disabled={sendingWhatsAppTest}
+                />
+                <p className="text-xs text-muted-foreground">Use full number with country code.</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp-test-template">Template</Label>
+                {loadingWhatsAppTemplates ? (
+                  <div className="h-10 rounded-md border border-border flex items-center px-3 text-sm text-muted-foreground">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading templates...
+                  </div>
+                ) : (
+                  <select
+                    id="whatsapp-test-template"
+                    value={selectedWhatsAppTemplate}
+                    onChange={(e) => setSelectedWhatsAppTemplate(e.target.value)}
+                    disabled={sendingWhatsAppTest || whatsAppTemplates.length === 0}
+                    className="w-full h-10 bg-secondary border border-border rounded-lg px-3 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
+                  >
+                    <option value="">Select template</option>
+                    {whatsAppTemplates.map((template: any) => (
+                      <option
+                        key={`${template.name}-${template.language}`}
+                        value={`${template.name}::${template.language}`}
+                      >
+                        {template.name} ({template.language})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowWhatsAppTestModal(false)}
+                  disabled={sendingWhatsAppTest}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={sendWhatsAppTestMessage}
+                  disabled={
+                    sendingWhatsAppTest ||
+                    loadingWhatsAppTemplates ||
+                    !whatsAppTestNumber.trim() ||
+                    !selectedWhatsAppTemplate
+                  }
+                >
+                  {sendingWhatsAppTest ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Send Test
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </Card>
