@@ -70,7 +70,6 @@ export const nodeServices = {
     { id: "inbound_call_completed", name: "Aistein-It - Inbound Call Completed", icon: "📱", color: "#10b981" },
     { id: "batch_call_completed", name: "Aistein-It - Batch Call Completed", icon: "📤", color: "#f59e0b" },
     { id: "batch_call", name: "Aistein-It - Batch Call (CSV/List)", icon: "📤", color: "#f59e0b" },
-    { id: "facebook_leads", name: "Facebook Leads", icon: "📘", color: "#1877f2" },
     { id: "shopify_order", name: "Shopify Order", icon: "🛍️", color: "#96bf48" },
     { id: "cart_abandoned", name: "Cart Abandoned", icon: "🛒", color: "#f59e0b" },
     { id: "webhook", name: "Webhook", icon: "🔗", color: "#a855f7" },
@@ -103,8 +102,8 @@ export const mockAutomations: Automation[] = [
       {
         id: "node_1",
         type: "trigger",
-        service: "facebook_leads",
-        config: { event: "" },
+        service: "webhook",
+        config: { event: "lead_created" },
         position: 0,
       },
       {

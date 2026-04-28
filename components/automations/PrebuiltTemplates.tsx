@@ -153,7 +153,6 @@ export function PrebuiltTemplates({ onUseTemplate }: PrebuiltTemplatesProps) {
 
   const getNodeIcon = (service: string): string => {
     const serviceMap: Record<string, string> = {
-      facebook_leads: "📘",
       aistein_contact_created: "👤",
       aistein_create_contact: "➕",
       whatsapp_template: "💬",
@@ -176,7 +175,6 @@ export function PrebuiltTemplates({ onUseTemplate }: PrebuiltTemplatesProps) {
 
   const getNodeName = (service: string): string => {
     const nameMap: Record<string, string> = {
-      facebook_leads: "Facebook Lead",
       aistein_contact_created: "Contact Created",
       aistein_create_contact: "Create Contact",
       whatsapp_template: "WhatsApp Message",
