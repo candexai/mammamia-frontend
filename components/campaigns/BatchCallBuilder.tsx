@@ -23,6 +23,8 @@ interface Recipient {
   [key: string]: any; // For dynamic variables
 }
 
+const MAX_BATCH_RECIPIENTS = 10000;
+
 export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) {
   const { data: phoneNumbers } = usePhoneNumbersList();
   const outboundPhoneNumbers = phoneNumbers?.filter(phone => phone.supports_outbound === true) || [];
@@ -189,6 +191,10 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
               reject(new Error("No valid recipients found in file"));
               return;
             }
+            if (parsedRecipients.length > MAX_BATCH_RECIPIENTS) {
+              reject(new Error(`File has ${parsedRecipients.length} recipients. Please keep recipients under ${MAX_BATCH_RECIPIENTS} per batch upload.`));
+              return;
+            }
 
             resolve(parsedRecipients);
           } catch (error: unknown) {
@@ -250,6 +256,10 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
 
             if (parsedRecipients.length === 0) {
               reject(new Error("No valid recipients found in file"));
+              return;
+            }
+            if (parsedRecipients.length > MAX_BATCH_RECIPIENTS) {
+              reject(new Error(`File has ${parsedRecipients.length} recipients. Please keep recipients under ${MAX_BATCH_RECIPIENTS} per batch upload.`));
               return;
             }
 
@@ -473,6 +483,10 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
       toast.error("Please upload a file with recipients");
       return;
     }
+    if (recipients.length > MAX_BATCH_RECIPIENTS) {
+      toast.error(`This batch has ${recipients.length} recipients. Please keep recipients under ${MAX_BATCH_RECIPIENTS} per batch.`);
+      return;
+    }
 
     // Validate recipients
     const invalidRecipients = recipients.filter(r => !r.phone_number || !r.name);
@@ -694,6 +708,9 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
               </label>
               <p className="text-xs text-muted-foreground mb-3">
                 Please ensure your file follows the format shown below. Include headers for <strong>name</strong>, <strong>email</strong>, <strong>phone_number</strong>, <strong>customer_name</strong>, <strong>customer_email</strong>, and <strong>customer_phone_number</strong>.
+              </p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mb-3">
+                Suggested limit: keep recipients under <strong>10,000</strong> per upload for reliable processing.
               </p>
 
               {/* Upload Area - Accepts both CSV and Excel */}

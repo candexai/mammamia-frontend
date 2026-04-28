@@ -17,6 +17,13 @@ class GoogleTranslateService {
   private cache: TranslationCache = {};
   private cacheKey = "translation-cache-v2";
   private pendingRequests: Map<string, Promise<string>> = new Map();
+  private readonly protectedTerms = [
+    "WhatsApp",
+    "Instagram",
+    "Facebook",
+    "Telegram",
+    "Gmail",
+  ];
 
   constructor() {
     // Load cache from localStorage
@@ -71,12 +78,43 @@ class GoogleTranslateService {
     }
   }
 
+  private protectTerms(text: string): {
+    text: string;
+    placeholders: Map<string, string>;
+  } {
+    const placeholders = new Map<string, string>();
+    let protectedText = text;
+    let placeholderIndex = 0;
+
+    this.protectedTerms.forEach((term) => {
+      const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`\\b${escapedTerm}\\b`, "gi");
+      protectedText = protectedText.replace(regex, (match) => {
+        const placeholder = `[[[NT_${placeholderIndex}]]]`;
+        placeholderIndex += 1;
+        placeholders.set(placeholder, match);
+        return placeholder;
+      });
+    });
+
+    return { text: protectedText, placeholders };
+  }
+
+  private restoreProtectedTerms(text: string, placeholders: Map<string, string>): string {
+    let restoredText = text;
+    placeholders.forEach((originalTerm, placeholder) => {
+      restoredText = restoredText.replaceAll(placeholder, originalTerm);
+    });
+    return restoredText;
+  }
+
   private async fetchTranslation(text: string, targetLang: string, sourceLang?: string): Promise<string> {
     try {
       console.log('📡 Making API request to Google Translate...');
+      const { text: protectedText, placeholders } = this.protectTerms(text);
 
       const payload: any = {
-        q: text,
+        q: protectedText,
         target: targetLang,
         format: "text",
       };
@@ -107,20 +145,21 @@ class GoogleTranslateService {
 
       const data = await response.json();
       const translatedText = data.data?.translations?.[0]?.translatedText || text;
+      const restoredTranslatedText = this.restoreProtectedTerms(translatedText, placeholders);
 
-      console.log('✅ Translation successful:', translatedText.substring(0, 50) + '...');
+      console.log('✅ Translation successful:', restoredTranslatedText.substring(0, 50) + '...');
 
       // Cache the translation
       const cacheKey = text.trim();
       if (!this.cache[cacheKey]) {
         this.cache[cacheKey] = {};
       }
-      this.cache[cacheKey][targetLang] = translatedText;
+      this.cache[cacheKey][targetLang] = restoredTranslatedText;
 
       // Save cache to localStorage (with error handling for quota)
       this.saveCache();
 
-      return translatedText;
+      return restoredTranslatedText;
     } catch (error) {
       console.error("❌ Translation error:", error);
       return text; // Fallback to original text
@@ -166,6 +205,7 @@ class GoogleTranslateService {
       // Translate uncached texts in one batch
       if (uncachedTexts.length > 0) {
         console.log(`📡 Translating ${uncachedTexts.length} uncached texts...`);
+        const protectedPayload = uncachedTexts.map((text) => this.protectTerms(text));
         const response = await fetch(
           `${TRANSLATE_API_URL}?key=${GOOGLE_TRANSLATE_API_KEY}`,
           {
@@ -174,7 +214,7 @@ class GoogleTranslateService {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              q: uncachedTexts,
+              q: protectedPayload.map((entry) => entry.text),
               target: targetLang,
               source: "en",
               format: "text",
@@ -190,11 +230,15 @@ class GoogleTranslateService {
           // Cache the translations
           uncachedTexts.forEach((text, idx) => {
             const translatedText = translations[idx]?.translatedText || text;
+            const restoredTranslatedText = this.restoreProtectedTerms(
+              translatedText,
+              protectedPayload[idx]?.placeholders || new Map<string, string>()
+            );
             const cacheKey = `${text.trim()}_en`;
             if (!this.cache[cacheKey]) {
               this.cache[cacheKey] = {};
             }
-            this.cache[cacheKey][targetLang] = translatedText;
+            this.cache[cacheKey][targetLang] = restoredTranslatedText;
           });
 
           this.saveCache();
