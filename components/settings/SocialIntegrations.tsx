@@ -418,7 +418,13 @@ export default function SocialIntegrations() {
       return;
     }
 
-    const sanitizedNumber = whatsAppTestNumber.trim();
+    // WhatsApp Cloud API expects recipient in international format as digits only
+    // (country code + number, no "+" or spaces).
+    const sanitizedNumber = whatsAppTestNumber.replace(/\D/g, '');
+    if (sanitizedNumber.length < 8) {
+      toast.error('Enter a valid WhatsApp number with country code (digits only).');
+      return;
+    }
     const selectedTemplate = whatsAppTemplates.find(
       (template: any) => `${template.name}::${template.language}` === selectedWhatsAppTemplate
     );
@@ -430,7 +436,7 @@ export default function SocialIntegrations() {
 
     setSendingWhatsAppTest(true);
     try {
-      const response: any = await apiClient.post('/whatsapp/send-template', {
+      const response: any = await apiClient.post('/automations/whatsapp/test-template', {
         to: sanitizedNumber,
         templateName: selectedTemplate.name,
         languageCode: selectedTemplate.language,
@@ -1499,7 +1505,7 @@ export default function SocialIntegrations() {
                   placeholder="+919876543210"
                   disabled={sendingWhatsAppTest}
                 />
-                <p className="text-xs text-muted-foreground">Use full number with country code.</p>
+                <p className="text-xs text-muted-foreground">Use full number with country code (example: 919876543210).</p>
               </div>
 
               <div className="space-y-2">
