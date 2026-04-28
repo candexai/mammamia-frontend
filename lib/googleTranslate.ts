@@ -15,7 +15,7 @@ interface TranslationCache {
 
 class GoogleTranslateService {
   private cache: TranslationCache = {};
-  private cacheKey = "translation-cache-v2";
+  private cacheKey = "translation-cache-v3";
   private pendingRequests: Map<string, Promise<string>> = new Map();
   private readonly protectedTerms = [
     "WhatsApp",
@@ -24,6 +24,14 @@ class GoogleTranslateService {
     "Telegram",
     "Gmail",
   ];
+
+  private getCanonicalProtectedTerm(text: string): string | null {
+    const normalized = text.trim().toLowerCase();
+    const match = this.protectedTerms.find(
+      (term) => term.toLowerCase() === normalized
+    );
+    return match || null;
+  }
 
   constructor() {
     // Load cache from localStorage
@@ -41,6 +49,8 @@ class GoogleTranslateService {
 
   async translate(text: string, targetLang: string, sourceLang?: string): Promise<string> {
     if (!text || !text.trim()) return text;
+    const canonicalProtectedTerm = this.getCanonicalProtectedTerm(text);
+    if (canonicalProtectedTerm) return canonicalProtectedTerm;
     // Only skip if target matches source (if known) or if target is English AND source is English (or implied)
     if (targetLang === sourceLang) return text;
     if (targetLang === "en" && sourceLang === "en") return text;
@@ -189,6 +199,12 @@ class GoogleTranslateService {
       const results: string[] = new Array(texts.length);
 
       texts.forEach((text, index) => {
+        const canonicalProtectedTerm = this.getCanonicalProtectedTerm(text);
+        if (canonicalProtectedTerm) {
+          results[index] = canonicalProtectedTerm;
+          return;
+        }
+
         // Assume English source for batch for now or update signature later
         const cacheKey = `${text.trim()}_en`;
         if (this.cache[cacheKey]?.[targetLang]) {
