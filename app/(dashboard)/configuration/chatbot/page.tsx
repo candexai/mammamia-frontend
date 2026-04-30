@@ -5,7 +5,7 @@ import { Upload, Plus, Pencil, Trash2, ChevronDown, Sparkles, UserCircle, Messag
 import { mockChatbotSettings } from "@/data/mockSettings";
 import { ToggleRow } from "@/components/settings/ToggleRow";
 import { ColorPicker } from "@/components/settings/ColorPicker";
-import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
+import { useSettings, useUpdateSettings, useUploadChatbotAvatar } from "@/hooks/useSettings";
 import { useKnowledgeBases } from "@/hooks/useKnowledgeBase";
 import { useAIBehavior } from "@/hooks/useAIBehavior";
 import { toast } from "sonner";
@@ -19,12 +19,12 @@ interface EscalationRule {
 export default function ChatbotSettingsPage() {
   const { data: dbSettings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
+  const uploadChatbotAvatar = useUploadChatbotAvatar();
   const { data: knowledgeBases, isLoading: isLoadingKBs, refetch: refetchKBs, error: kbError, isError: isKbError } = useKnowledgeBases();
   const { aiBehavior, updateChatAgentPrompt, updateChatAgentHumanOperator } = useAIBehavior();
   const [settings, setSettings] = useState(mockChatbotSettings);
   const [activeLanguage, setActiveLanguage] = useState("en");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState<string>("");
   const [selectedKnowledgeBaseIds, setSelectedKnowledgeBaseIds] = useState<string[]>([]);
   const [showKBDropdown, setShowKBDropdown] = useState(false);
@@ -122,16 +122,15 @@ export default function ChatbotSettingsPage() {
     }
   }, [aiBehavior]);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setLogoFile(file);
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const uploadedUrl = await uploadChatbotAvatar.mutateAsync(file);
+        setLogoUrl(uploadedUrl);
+      } catch (error) {
+        console.error("Failed to upload logo:", error);
+      }
     }
   };
 
@@ -312,7 +311,6 @@ export default function ChatbotSettingsPage() {
                   <button
                     onClick={() => {
                       setLogoUrl(null);
-                      setLogoFile(null);
                     }}
                     className="text-xs text-red-500 hover:text-red-400 mt-2 cursor-pointer"
                   >
