@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { ConversationFilters } from "@/components/conversations/ConversationFilters";
 import { ConversationList } from "@/components/conversations/ConversationList";
@@ -20,6 +21,7 @@ export default function ConversationsPage() {
   const { getSidebarWidth } = useSidebar();
   const queryClient = useQueryClient();
   const { socket } = useSocket();
+  const searchParams = useSearchParams();
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(null);
@@ -63,6 +65,14 @@ export default function ConversationsPage() {
 
   const conversations = conversationsData?.conversations || [];
   const selectedConversation = selectedConversationData || null;
+
+  // Support deep-linking from email: /conversations?conversationId=<id>
+  useEffect(() => {
+    const deepLinkedConversationId = searchParams.get('conversationId');
+    if (deepLinkedConversationId) {
+      setSelectedConversationId(deepLinkedConversationId);
+    }
+  }, [searchParams]);
 
   // Close selected conversation when filter changes
   useEffect(() => {

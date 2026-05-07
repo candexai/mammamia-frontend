@@ -453,14 +453,16 @@ export const automationTemplates: AutomationTemplate[] = [
           subject: "New Inbound Message from {{platform}}",
           body: 
             "Hello,\n\n" +
-            "You have received a new inbound message.\n\n" +
-            "📍 Platform: {{platform}}\n" +
-            "👤 Sender: {{contact.name}}\n" +
-            "📞 Contact: {{contact.phone}}\n" +
-            "💬 Message: {{messageText}}\n" +
-            "🕒 Time: {{now}}\n\n" +
-            "🔗 Open Conversation:\n" +
-            "https://yourcrm.com/conversations/{{conversationId}}\n\n" +
+            "You have received a new inbound chat message.\n\n" +
+            "------------------------------\n" +
+            "Platform : {{platform}}\n" +
+            "Sender   : {{sender_name}}\n" +
+            "Contact  : {{contact.phone}}\n" +
+            "Message  : {{messageText}}\n" +
+            "Time     : {{formatted_now}}\n" +
+            "------------------------------\n\n" +
+            "Open Conversation:\n" +
+            "{{conversation_link}}\n\n" +
             "Please respond as soon as possible.\n\n" +
             "Thanks,\n" +
             "Your Automation System",
