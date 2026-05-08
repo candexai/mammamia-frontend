@@ -666,7 +666,7 @@ export function NodeConfigPanel({
         return { valid: false, error: "Please paste a Google Sheet link or select a spreadsheet from the list" };
       }
 
-      // Standard (fixed) format always has 6 locked columns; no manual values required.
+      // Standard (fixed) format always has locked columns; no manual values required.
       const useFixedFormat = config.useFixedFormat !== false;
       if (useFixedFormat) {
         return { valid: true };
@@ -2804,6 +2804,7 @@ export function NodeConfigPanel({
                   { label: "Phone Number", desc: "Call → CSV → Not Provided" },
                   { label: "Appointment Date & Time", desc: "Extracted from call" },
                   { label: "Call Recording", desc: "Audio link of the call" },
+                  { label: "City", desc: "Call → CSV → Not Provided" },
                 ];
                 const COVERED = new Set([
                   "name",
@@ -2814,6 +2815,9 @@ export function NodeConfigPanel({
                   "full_address",
                   "customer_address",
                   "home_address",
+                  "city",
+                  "customer_city",
+                  "home_city",
                   "email",
                   "customer_email",
                   "phone",
@@ -2977,7 +2981,7 @@ export function NodeConfigPanel({
                             Sheet preview
                           </p>
                           <p className="text-xs text-foreground/90 leading-relaxed">
-                            <span className="font-medium">Locked:</span> Name | Address | Email | Phone Number | Appointment Date & Time | Call Recording
+                            <span className="font-medium">Locked:</span> Name | Address | Email | Phone Number | Appointment Date & Time | Call Recording | City
                           </p>
                           {enabledExtras.length > 0 && (
                             <p className="text-xs text-foreground/80 leading-relaxed mt-1">
