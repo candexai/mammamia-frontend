@@ -2800,11 +2800,11 @@ export function NodeConfigPanel({
                 const FIXED_COLUMNS = [
                   { label: "Name", desc: "From call or CSV" },
                   { label: "Address", desc: "Call → CSV → Not Provided" },
+                  { label: "City", desc: "Call → CSV → Not Provided" },
                   { label: "Email", desc: "Call → CSV → Not Provided" },
                   { label: "Phone Number", desc: "Call → CSV → Not Provided" },
                   { label: "Appointment Date & Time", desc: "Extracted from call" },
                   { label: "Call Recording", desc: "Audio link of the call" },
-                  { label: "City", desc: "Call → CSV → Not Provided" },
                 ];
                 const COVERED = new Set([
                   "name",
@@ -2981,7 +2981,7 @@ export function NodeConfigPanel({
                             Sheet preview
                           </p>
                           <p className="text-xs text-foreground/90 leading-relaxed">
-                            <span className="font-medium">Locked:</span> Name | Address | Email | Phone Number | Appointment Date & Time | Call Recording | City
+                            <span className="font-medium">Locked:</span> Name | Address | City | Email | Phone Number | Appointment Date & Time | Call Recording
                           </p>
                           {enabledExtras.length > 0 && (
                             <p className="text-xs text-foreground/80 leading-relaxed mt-1">
