@@ -78,17 +78,55 @@ export function useRetryBatchJob() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (jobId: string) => batchCallingService.retryBatchJob(jobId),
+    onMutate: async (jobId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['batchCalls'] });
+
+      // Snapshot previous value
+      const previousBatchCalls = queryClient.getQueryData(['batchCalls']);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['batchCalls'], (old: any[] | undefined) => {
+        if (!old) return old;
+        return old.map((batch) =>
+          batch.batch_call_id === jobId
+            ? { ...batch, status: 'retrying' }
+            : batch
+        );
+      });
+
+      return { previousBatchCalls };
+    },
     onSuccess: (data, jobId) => {
       console.log('✅ [useRetryBatchJob] Retry successful for job:', jobId, data);
-      toast.success('Batch job retry initiated successfully');
+
+      // Check if the batch was already completed (no new calls to retry)
+      if (data.status === 'completed' || data.status === 'finished') {
+        const totalScheduled = data.total_calls_scheduled || 0;
+        const totalFinished = data.total_calls_finished || 0;
+        const totalDispatched = data.total_calls_dispatched || 0;
+
+        if (totalFinished >= totalScheduled) {
+          toast.info('Batch already completed. No failed calls to retry.');
+        } else {
+          toast.success('Batch job retry initiated successfully');
+        }
+      } else {
+        toast.success('Batch job retry initiated successfully');
+      }
+
       queryClient.invalidateQueries({ queryKey: ['batchCalls'] });
       queryClient.invalidateQueries({ queryKey: ['batchJobStatus', jobId] });
       queryClient.invalidateQueries({ queryKey: ['batchJobDetails', jobId] });
     },
-    onError: (error: any) => {
+    onError: (error: any, jobId, context) => {
       console.error('❌ [useRetryBatchJob] Error:', error);
       console.error('❌ [useRetryBatchJob] Error response:', error.response?.data);
       toast.error(error.message || 'Failed to retry batch job');
+      // Rollback to previous value on error
+      if (context?.previousBatchCalls) {
+        queryClient.setQueryData(['batchCalls'], context.previousBatchCalls);
+      }
     },
   });
 }
@@ -121,9 +159,9 @@ export function useBatchCalls() {
       const data = query.state.data as any[] | undefined;
       if (data && data.length > 0) {
         const hasActiveCalls = data.some((call: any) =>
-          ['pending', 'running', 'scheduled', 'in_progress'].includes(call.status?.toLowerCase())
+          ['pending', 'running', 'scheduled', 'in_progress', 'retrying'].includes(call.status?.toLowerCase())
         );
-        return hasActiveCalls ? 10000 : 30000; // 10 s for active batches, 30 s otherwise
+        return hasActiveCalls ? 5000 : 30000; // 5 s for active/retrying batches, 30 s otherwise
       }
       return 30000; // Still poll even with no calls so new ones appear quickly
     },

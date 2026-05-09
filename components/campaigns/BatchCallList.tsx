@@ -78,6 +78,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
         return <XCircle className="w-4 h-4 text-red-500" />;
       case 'running':
       case 'in_progress':
+      case 'retrying':
         return <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />;
       case 'pending':
       case 'scheduled':
@@ -102,6 +103,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
         return 'text-red-500 bg-red-500/10';
       case 'running':
       case 'in_progress':
+      case 'retrying':
         return 'text-blue-500 bg-blue-500/10';
       case 'pending':
       case 'scheduled':
@@ -113,7 +115,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
 
   const canCancel = (status: string) => {
     const lowerStatus = status.toLowerCase();
-    return ['pending', 'scheduled', 'running', 'in_progress'].includes(lowerStatus);
+    return ['pending', 'scheduled', 'running', 'in_progress', 'retrying'].includes(lowerStatus);
   };
 
   const canResume = (status: string) => {
@@ -143,6 +145,8 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
     setRetryingJobId(jobId);
     try {
       await retryBatchJob.mutateAsync(jobId);
+      // Force an immediate refetch after successful retry
+      await refetch();
     } catch (_) {
       // Error handled by mutation
     } finally {
