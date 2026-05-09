@@ -44,6 +44,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
   const queryClient = useQueryClient();
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [retryingJobId, setRetryingJobId] = useState<string | null>(null);
 
   const handleCancel = async (jobId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -139,10 +140,13 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
 
   const handleRetry = async (jobId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    setRetryingJobId(jobId);
     try {
       await retryBatchJob.mutateAsync(jobId);
     } catch (_) {
       // Error handled by mutation
+    } finally {
+      setRetryingJobId(null);
     }
   };
 
@@ -298,11 +302,11 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
                       {canRetry(batchCall.status) && (
                         <button
                           onClick={(e) => handleRetry(batchCall.batch_call_id, e)}
-                          disabled={retryBatchJob.isPending}
+                          disabled={retryingJobId === batchCall.batch_call_id}
                           className="px-3 py-1.5 text-xs font-medium text-orange-500 hover:text-orange-600 hover:bg-orange-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                         >
-                          <RefreshCw className="w-3 h-3" />
-                          {retryBatchJob.isPending ? 'Retrying...' : 'Retry Batch'}
+                          <RefreshCw className={cn("w-3 h-3", retryingJobId === batchCall.batch_call_id && "animate-spin")} />
+                          {retryingJobId === batchCall.batch_call_id ? 'Retrying...' : 'Retry Batch'}
                         </button>
                       )}
                       {canCancel(batchCall.status) && (

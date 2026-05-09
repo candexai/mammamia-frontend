@@ -79,6 +79,7 @@ export function useRetryBatchJob() {
   return useMutation({
     mutationFn: (jobId: string) => batchCallingService.retryBatchJob(jobId),
     onSuccess: (data, jobId) => {
+      console.log('✅ [useRetryBatchJob] Retry successful for job:', jobId, data);
       toast.success('Batch job retry initiated successfully');
       queryClient.invalidateQueries({ queryKey: ['batchCalls'] });
       queryClient.invalidateQueries({ queryKey: ['batchJobStatus', jobId] });
@@ -86,6 +87,7 @@ export function useRetryBatchJob() {
     },
     onError: (error: any) => {
       console.error('❌ [useRetryBatchJob] Error:', error);
+      console.error('❌ [useRetryBatchJob] Error response:', error.response?.data);
       toast.error(error.message || 'Failed to retry batch job');
     },
   });
