@@ -133,6 +133,20 @@ class BatchCallingService {
   }
 
   /**
+   * Retry batch job (failed and no-response recipients)
+   * POST /api/v1/batch-calling/:jobId/retry
+   */
+  async retryBatchJob(jobId: string): Promise<BatchCallResponse> {
+    try {
+      const response = await apiClient.post<BatchCallResponse>(`/batch-calling/${jobId}/retry`, {});
+      return response;
+    } catch (error: any) {
+      console.error('❌ [BatchCallingService] retryBatchJob() error:', error);
+      throw new Error(error.response?.data?.error?.message || error.message || 'Failed to retry batch job');
+    }
+  }
+
+  /**
    * Resume batch job
    * POST /api/v1/batch-calling/:jobId/resume
    */

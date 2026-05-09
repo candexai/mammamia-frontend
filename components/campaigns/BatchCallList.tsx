@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Phone, Clock, CheckCircle, XCircle, AlertCircle, X, RefreshCw, ChevronDown, ChevronUp, User, Mail, Calendar, ChevronLeft, ChevronRight, FileText } from "lucide-react";
-import { useBatchCalls, useCancelBatchJob, useResumeBatchJob, useBatchJobDetails } from "@/hooks/useBatchCalling";
+import { useBatchCalls, useCancelBatchJob, useResumeBatchJob, useRetryBatchJob, useBatchJobDetails } from "@/hooks/useBatchCalling";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -40,6 +40,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
   const { data: batchCalls = [], isLoading, isFetching, refetch } = useBatchCalls();
   const cancelBatchJob = useCancelBatchJob();
   const resumeBatchJob = useResumeBatchJob();
+  const retryBatchJob = useRetryBatchJob();
   const queryClient = useQueryClient();
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
@@ -119,6 +120,11 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
     return ['cancelled', 'canceled', 'paused'].includes(lowerStatus);
   };
 
+  const canRetry = (status: string) => {
+    const lowerStatus = status.toLowerCase();
+    return ['completed', 'finished', 'done', 'failed', 'error'].includes(lowerStatus);
+  };
+
   const handleResume = async (jobId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -126,6 +132,15 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
       queryClient.invalidateQueries({ queryKey: ['batchCalls'] });
       queryClient.invalidateQueries({ queryKey: ['batchJobStatus', jobId] });
       queryClient.invalidateQueries({ queryKey: ['batchJobDetails', jobId] });
+    } catch (_) {
+      // Error handled by mutation
+    }
+  };
+
+  const handleRetry = async (jobId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await retryBatchJob.mutateAsync(jobId);
     } catch (_) {
       // Error handled by mutation
     }
@@ -278,6 +293,16 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
                           className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {resumeBatchJob.isPending ? 'Resuming...' : 'Resume'}
+                        </button>
+                      )}
+                      {canRetry(batchCall.status) && (
+                        <button
+                          onClick={(e) => handleRetry(batchCall.batch_call_id, e)}
+                          disabled={retryBatchJob.isPending}
+                          className="px-3 py-1.5 text-xs font-medium text-orange-500 hover:text-orange-600 hover:bg-orange-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          {retryBatchJob.isPending ? 'Retrying...' : 'Retry Batch'}
                         </button>
                       )}
                       {canCancel(batchCall.status) && (

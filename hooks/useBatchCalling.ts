@@ -72,6 +72,26 @@ export function useCancelBatchJob() {
 }
 
 /**
+ * Retry batch job mutation (failed and no-response recipients)
+ */
+export function useRetryBatchJob() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: string) => batchCallingService.retryBatchJob(jobId),
+    onSuccess: (data, jobId) => {
+      toast.success('Batch job retry initiated successfully');
+      queryClient.invalidateQueries({ queryKey: ['batchCalls'] });
+      queryClient.invalidateQueries({ queryKey: ['batchJobStatus', jobId] });
+      queryClient.invalidateQueries({ queryKey: ['batchJobDetails', jobId] });
+    },
+    onError: (error: any) => {
+      console.error('❌ [useRetryBatchJob] Error:', error);
+      toast.error(error.message || 'Failed to retry batch job');
+    },
+  });
+}
+
+/**
  * Resume batch job mutation
  */
 export function useResumeBatchJob() {

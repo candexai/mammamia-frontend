@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Loader2, ChevronDown, Check, Eye, Plus, Trash2, Play, Pause } from 'lucide-react';
+import { X, Loader2, ChevronDown, Check, Eye, Plus, Trash2, Play, Pause, PhoneForwarded } from 'lucide-react';
 import { useUpdateAgentPrompt } from '@/hooks/useAgents';
 import { useKnowledgeBases } from '@/hooks/useKnowledgeBase';
 import { Agent, agentService } from '@/services/agent.service';
@@ -11,7 +11,6 @@ import {
   VOICE_OPTIONS,
   getDefaultGreeting,
   getDefaultSystemPrompt,
-  getDefaultEscalationConditions,
   getVoiceIdFromValue,
   getVoiceByVoiceId,
   renderGreeting,
@@ -39,7 +38,17 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
   const [selectedKBIds, setSelectedKBIds] = useState<string[]>([]);
   const [showKBDropdown, setShowKBDropdown] = useState(false);
   const [showGreetingPreview, setShowGreetingPreview] = useState(false);
-  const [escalationRules, setEscalationRules] = useState<string[]>(['']);
+
+  // Built-in tools state
+  const [endCallEnabled, setEndCallEnabled] = useState(true);
+  const [languageDetectionEnabled, setLanguageDetectionEnabled] = useState(false);
+  const [voicemailDetectionEnabled, setVoicemailDetectionEnabled] = useState(false);
+
+  // Human transfer state
+  const [enableHumanTransfer, setEnableHumanTransfer] = useState(false);
+  const [humanTransferRules, setHumanTransferRules] = useState<Array<{ condition: string; phone_number: string }>>([
+    { condition: '', phone_number: '' }
+  ]);
 
   // Voice testing state
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
@@ -73,7 +82,24 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
       setSystemPrompt(agent.system_prompt || getDefaultSystemPrompt(agentLanguage));
       setLanguage(agentLanguage);
       setSelectedKBIds(agent.knowledge_base_ids || []);
-      setEscalationRules(agent.escalationRules && agent.escalationRules.length > 0 ? agent.escalationRules : getDefaultEscalationConditions(agentLanguage));
+
+      // Built-in tools
+      setEndCallEnabled(agent.built_in_tools?.end_call !== false);
+      setLanguageDetectionEnabled(agent.built_in_tools?.language_detection ?? false);
+      setVoicemailDetectionEnabled(agent.built_in_tools?.voicemail_detection ?? false);
+
+      // Human transfer
+      setEnableHumanTransfer(agent.enable_human_transfer ?? false);
+      if (agent.human_transfer_rules && agent.human_transfer_rules.length > 0) {
+        setHumanTransferRules(
+          agent.human_transfer_rules.map((r) => ({
+            condition: r.condition,
+            phone_number: r.phone_number,
+          }))
+        );
+      } else {
+        setHumanTransferRules([{ condition: '', phone_number: '' }]);
+      }
 
       // Check if first message/system prompt match defaults (user hasn't customized)
       const defaultFirstMessage = getDefaultGreeting(agentLanguage);
@@ -112,12 +138,6 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
       if (!hasCustomizedSystemPrompt) {
         const currentSystemDefault = getDefaultSystemPrompt(language);
         setSystemPrompt(currentSystemDefault);
-      }
-
-      // Update escalation conditions if empty or default
-      const defaultEscalation = getDefaultEscalationConditions(language);
-      if (escalationRules.length === 0 || (escalationRules.length === 1 && escalationRules[0] === '')) {
-        setEscalationRules(defaultEscalation);
       }
 
       // Reset voice selection if current voice doesn't match language
@@ -234,6 +254,10 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
     console.log('[EditAgentModal] 🚀 Updating agent with voice_id:', voiceId);
 
     try {
+      const validTransferRules = humanTransferRules
+        .filter((r) => r.condition.trim() && r.phone_number.trim())
+        .map((r) => ({ ...r, transfer_type: 'sip_refer' as const }));
+
       await updateAgentPrompt.mutateAsync({
         agentId: agent.agent_id,
         data: {
@@ -241,8 +265,14 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
           system_prompt: systemPrompt.trim() || getDefaultSystemPrompt(language),
           language: language.trim(),
           voice_id: voiceId,
-          escalationRules: escalationRules.filter(rule => rule.trim() !== '') || undefined,
           knowledge_base_ids: selectedKBIds,
+          built_in_tools: {
+            end_call: endCallEnabled,
+            language_detection: languageDetectionEnabled,
+            voicemail_detection: voicemailDetectionEnabled,
+          },
+          enable_human_transfer: enableHumanTransfer,
+          human_transfer_rules: enableHumanTransfer ? validTransferRules : [],
         },
       });
 
@@ -368,7 +398,7 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
               <option value="ar">Arabic</option>
             </select>
             <p className="text-xs text-muted-foreground mt-1.5">
-              Changing language will automatically update greeting, system prompt, and escalation conditions
+              Changing language will automatically update greeting and system prompt
             </p>
           </div>
 
@@ -535,55 +565,6 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
             />
           </div>
 
-          {/* Escalation Conditions */}
-          <div className="border-t border-border pt-4">
-            <label className="block text-sm font-medium text-foreground mb-3">
-              Escalation Conditions
-            </label>
-            <div className="space-y-2">
-              {escalationRules.map((rule, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={rule}
-                    onChange={(e) => {
-                      const newRules = [...escalationRules];
-                      newRules[index] = e.target.value;
-                      setEscalationRules(newRules);
-                    }}
-                    className="flex-1 px-4 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                    placeholder="e.g., user says transfer, sentiment negative, user requests human"
-                    disabled={updateAgentPrompt.isPending}
-                  />
-                  {escalationRules.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEscalationRules(escalationRules.filter((_, i) => i !== index));
-                      }}
-                      className="p-2.5 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                      disabled={updateAgentPrompt.isPending}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => setEscalationRules([...escalationRules, ''])}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                disabled={updateAgentPrompt.isPending}
-              >
-                <Plus className="w-4 h-4" />
-                Add escalation condition
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1.5">
-              Define when the AI should transfer calls to a human operator
-            </p>
-          </div>
-
           {/* Knowledge Bases */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
@@ -643,6 +624,144 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Built-in Tools */}
+          <div className="border-t border-border pt-4">
+            <label className="block text-sm font-medium text-foreground mb-3">
+              Built-in Tools
+            </label>
+            <div className="space-y-3">
+              {[
+                { label: 'End Call', description: 'Allow the agent to hang up the call', value: endCallEnabled, setter: setEndCallEnabled },
+                { label: 'Language Detection', description: 'Automatically detect and adapt to caller language', value: languageDetectionEnabled, setter: setLanguageDetectionEnabled },
+                { label: 'Voicemail Detection', description: 'Detect when the call reaches voicemail', value: voicemailDetectionEnabled, setter: setVoicemailDetectionEnabled },
+              ].map(({ label, description, value, setter }) => (
+                <label key={label} className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative mt-0.5 shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) => setter(e.target.checked)}
+                      disabled={updateAgentPrompt.isPending}
+                      className="peer sr-only"
+                    />
+                    {/* Visual only — toggling is handled by the label + checkbox above (do not add onClick here or it double-toggles with the label) */}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'relative flex h-6 w-10 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background',
+                        value ? 'bg-primary' : 'bg-secondary border border-border',
+                        updateAgentPrompt.isPending && 'pointer-events-none opacity-50'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'pointer-events-none absolute top-1 left-1 block h-4 w-4 rounded-full bg-white shadow transition-transform',
+                          value ? 'translate-x-4' : 'translate-x-0'
+                        )}
+                      />
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground">{description}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Human Transfer */}
+          <div className="border-t border-border pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <label className="block text-sm font-medium text-foreground">Human Transfer</label>
+                <p className="text-xs text-muted-foreground mt-0.5">Transfer calls to a human agent under specific conditions</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={enableHumanTransfer}
+                disabled={updateAgentPrompt.isPending}
+                onClick={() => setEnableHumanTransfer(!enableHumanTransfer)}
+                className={cn(
+                  'relative h-6 w-10 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                  enableHumanTransfer ? 'bg-primary' : 'bg-secondary border border-border',
+                  updateAgentPrompt.isPending && 'cursor-not-allowed opacity-50'
+                )}
+              >
+                <span
+                  className={cn(
+                    'pointer-events-none absolute top-1 left-1 block h-4 w-4 rounded-full bg-white shadow transition-transform',
+                    enableHumanTransfer ? 'translate-x-4' : 'translate-x-0'
+                  )}
+                />
+              </button>
+            </div>
+
+            {enableHumanTransfer && (
+              <div className="space-y-3 mt-3">
+                <p className="text-xs text-muted-foreground">Transfer type is SIP Refer only.</p>
+                {humanTransferRules.map((rule, index) => (
+                  <div key={index} className="p-3 bg-secondary rounded-lg border border-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                        <PhoneForwarded className="w-3 h-3" /> Transfer Rule {index + 1}
+                      </span>
+                      {humanTransferRules.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setHumanTransferRules(humanTransferRules.filter((_, i) => i !== index))}
+                          className="p-1 text-destructive hover:bg-destructive/10 rounded transition-colors"
+                          disabled={updateAgentPrompt.isPending}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={rule.condition}
+                      onChange={(e) => {
+                        const updated = [...humanTransferRules];
+                        updated[index] = { ...updated[index], condition: e.target.value };
+                        setHumanTransferRules(updated);
+                      }}
+                      placeholder="Condition: e.g., User requests a human or supervisor"
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                      disabled={updateAgentPrompt.isPending}
+                    />
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                      <input
+                        type="tel"
+                        value={rule.phone_number}
+                        onChange={(e) => {
+                          const updated = [...humanTransferRules];
+                          updated[index] = { ...updated[index], phone_number: e.target.value };
+                          setHumanTransferRules(updated);
+                        }}
+                        placeholder="Phone number: e.g., +18005550199"
+                        className="min-w-0 flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                        disabled={updateAgentPrompt.isPending}
+                      />
+                      <span className="shrink-0 rounded-lg border border-border bg-muted/40 px-3 py-2 text-center text-sm font-medium text-muted-foreground">
+                        SIP Refer
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setHumanTransferRules([...humanTransferRules, { condition: '', phone_number: '' }])}
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  disabled={updateAgentPrompt.isPending}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add transfer rule
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Footer */}

@@ -1,5 +1,11 @@
 import { apiClient } from '@/lib/api';
 
+export interface HumanTransferRule {
+  condition: string;
+  phone_number: string;
+  transfer_type: string;
+}
+
 export interface Agent {
   _id: string;
   agent_id: string;
@@ -12,6 +18,9 @@ export interface Agent {
   escalationRules?: string[];
   knowledge_base_ids: string[];
   tool_ids: string[];
+  built_in_tools?: { end_call?: boolean; language_detection?: boolean; voicemail_detection?: boolean };
+  enable_human_transfer?: boolean;
+  human_transfer_rules?: HumanTransferRule[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -37,6 +46,9 @@ export interface UpdateAgentPromptData {
   voice_id?: string;
   escalationRules?: string[];
   knowledge_base_ids: string[];
+  built_in_tools?: { end_call?: boolean; language_detection?: boolean; voicemail_detection?: boolean };
+  enable_human_transfer?: boolean;
+  human_transfer_rules?: HumanTransferRule[];
   // tool_ids are automatically added from backend env variables (PRODUCTS_TOOL_ID and ORDERS_TOOL_ID)
 }
 
