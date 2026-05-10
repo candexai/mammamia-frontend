@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { ConversationFilters } from "@/components/conversations/ConversationFilters";
@@ -17,6 +17,8 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { MessageSquare, Activity, MessageCircle, Phone, Instagram, Facebook, Hash } from "lucide-react";
 
+const CONVERSATIONS_PAGE_SIZE = 25;
+
 export default function ConversationsPage() {
   const { getSidebarWidth } = useSidebar();
   const queryClient = useQueryClient();
@@ -26,12 +28,12 @@ export default function ConversationsPage() {
     string | null
   >(null);
   const [filter, setFilter] = useState("all");
+  const [conversationPage, setConversationPage] = useState(1);
 
-  // Parse filter to determine if it's a channel filter
-  const getFilterParams = () => {
+  // Parse filter to determine if it's a channel filter (stable for React Query key)
+  const filterParams = useMemo(() => {
     if (filter.startsWith('channel:')) {
       const channel = filter.replace('channel:', '');
-      // Map channel names to backend format
       const channelMap: Record<string, string> = {
         'website': 'website',
         'whatsapp': 'whatsapp',
@@ -40,14 +42,14 @@ export default function ConversationsPage() {
         'phone': 'phone',
       };
       const backendChannel = channelMap[channel] || channel;
-      
-      // For Instagram and Facebook, also pass platform in metadata
+
       if (channel === 'instagram') {
         return { channel: backendChannel, platform: 'instagram' };
-      } else if (channel === 'facebook') {
+      }
+      if (channel === 'facebook') {
         return { channel: backendChannel, platform: 'facebook' };
       }
-      
+
       return { channel: backendChannel };
     }
     if (filter.startsWith('folder:')) {
@@ -55,15 +57,25 @@ export default function ConversationsPage() {
       return { folderId };
     }
     return { status: filter === "all" ? undefined : filter };
-  };
+  }, [filter]);
+
+  const conversationQueryFilters = useMemo(
+    () => ({
+      ...filterParams,
+      page: conversationPage,
+      limit: CONVERSATIONS_PAGE_SIZE,
+    }),
+    [filterParams, conversationPage]
+  );
 
   // Fetch conversations from API
-  const { data: conversationsData, isLoading, isError, error } = useConversations(getFilterParams());
+  const { data: conversationsData, isLoading, isError, error } = useConversations(conversationQueryFilters);
 
   // Fetch selected conversation details
   const { data: selectedConversationData } = useConversation(selectedConversationId);
 
   const conversations = conversationsData?.conversations || [];
+  const listPagination = conversationsData?.pagination;
   const selectedConversation = selectedConversationData || null;
 
   // Support deep-linking from email: /conversations?conversationId=<id>
@@ -77,6 +89,10 @@ export default function ConversationsPage() {
   // Close selected conversation when filter changes
   useEffect(() => {
     setSelectedConversationId(null);
+  }, [filter]);
+
+  useEffect(() => {
+    setConversationPage(1);
   }, [filter]);
 
   // Track which conversations have already shown transcript toast
@@ -387,6 +403,8 @@ export default function ConversationsPage() {
             conversations={conversations}
             selectedId={selectedConversationId || undefined}
             onSelectConversation={setSelectedConversationId}
+            pagination={listPagination}
+            onPageChange={setConversationPage}
           />
         )}
 

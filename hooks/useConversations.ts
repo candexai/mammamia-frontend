@@ -23,9 +23,10 @@ export function useInfiniteConversations(filters?: ConversationFilters) {
     queryKey: ['conversations', 'infinite', filters],
     queryFn: ({ pageParam = 1 }) =>
       conversationService.getAll({ ...filters, page: pageParam }),
-    getNextPageParam: (lastPage, pages) => {
-      if (lastPage.pagination?.hasNext) {
-        return pages.length + 1;
+    getNextPageParam: (lastPage) => {
+      const p = lastPage.pagination;
+      if (p?.hasNext && typeof p.page === 'number') {
+        return p.page + 1;
       }
       return undefined;
     },

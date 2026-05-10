@@ -1,24 +1,38 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, SlidersHorizontal, ChevronDown, UserCircle2 } from "lucide-react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { Search, SlidersHorizontal, UserCircle2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Conversation } from "@/data/mockConversations";
 import { ConversationCard } from "./ConversationCard";
 import { useQueryClient } from "@tanstack/react-query";
 
 
+export interface ConversationListPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages?: number;
+  hasNext?: boolean;
+  hasPrev?: boolean;
+}
+
 interface ConversationListProps {
   conversations: Conversation[];
   selectedId?: string;
   onSelectConversation?: (id: string) => void;
+  pagination?: ConversationListPagination;
+  onPageChange?: (page: number) => void;
 }
 
 export function ConversationList({
   conversations,
   selectedId,
   onSelectConversation,
+  pagination,
+  onPageChange,
 }: ConversationListProps) {
   const queryClient = useQueryClient();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [statusFilter, setStatusFilter] = useState("all"); // Changed from "open" to "all"
   const [sortBy, setSortBy] = useState("recent");
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,6 +85,30 @@ export function ConversationList({
 
     return filtered;
   }, [conversations, searchQuery, statusFilter, sortBy]);
+
+  const limit = pagination?.limit ?? 25;
+  const totalPages =
+    pagination?.totalPages ??
+    (pagination?.total != null
+      ? Math.max(1, Math.ceil(pagination.total / Math.max(limit, 1)))
+      : 1);
+  const showPagination =
+    !!pagination &&
+    typeof pagination.total === "number" &&
+    pagination.total > limit &&
+    typeof onPageChange === "function";
+  const page = pagination?.page ?? 1;
+  const hasPrev = pagination?.hasPrev ?? page > 1;
+  const hasNext = pagination?.hasNext ?? page < totalPages;
+  const rangeStart =
+    pagination?.total === 0 ? 0 : (page - 1) * limit + 1;
+  const rangeEnd = pagination?.total != null
+    ? Math.min(page * limit, pagination.total)
+    : 0;
+
+  useEffect(() => {
+    scrollAreaRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [pagination?.page]);
 
   return (
     <div className="w-[400px] bg-card/50 backdrop-blur-sm border-r border-border/60 h-full flex flex-col shadow-[2px_0_8px_rgba(0,0,0,0.04)] overflow-hidden">
@@ -145,7 +183,7 @@ export function ConversationList({
       )}
 
       {/* Conversation Cards */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollAreaRef} className="flex-1 overflow-y-auto min-h-0">
         {filteredConversations.length > 0 ? (
           filteredConversations.map((conversation) => (
             <ConversationCard
@@ -175,6 +213,37 @@ export function ConversationList({
           </div>
         )}
       </div>
+
+      {showPagination && (
+        <div className="flex-shrink-0 border-t border-border/50 bg-gradient-to-br from-card/95 via-card/90 to-background/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground font-medium tabular-nums truncate min-w-0">
+            {rangeStart}–{rangeEnd} of {pagination!.total}
+          </p>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button
+              type="button"
+              aria-label="Previous page"
+              disabled={!hasPrev}
+              onClick={() => onPageChange?.(page - 1)}
+              className="p-2 rounded-lg border border-border/60 bg-card/80 text-foreground hover:bg-accent/60 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-semibold text-foreground tabular-nums px-1 min-w-[4.5rem] text-center">
+              {page} / {totalPages}
+            </span>
+            <button
+              type="button"
+              aria-label="Next page"
+              disabled={!hasNext}
+              onClick={() => onPageChange?.(page + 1)}
+              className="p-2 rounded-lg border border-border/60 bg-card/80 text-foreground hover:bg-accent/60 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
