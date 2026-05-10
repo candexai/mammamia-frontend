@@ -29,6 +29,15 @@ export default function ConversationsPage() {
   >(null);
   const [filter, setFilter] = useState("all");
   const [conversationPage, setConversationPage] = useState(1);
+  const [conversationListSearch, setConversationListSearch] = useState("");
+  const [debouncedListSearch, setDebouncedListSearch] = useState("");
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setDebouncedListSearch(conversationListSearch.trim());
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [conversationListSearch]);
 
   // Parse filter to determine if it's a channel filter (stable for React Query key)
   const filterParams = useMemo(() => {
@@ -64,12 +73,13 @@ export default function ConversationsPage() {
       ...filterParams,
       page: conversationPage,
       limit: CONVERSATIONS_PAGE_SIZE,
+      ...(debouncedListSearch ? { search: debouncedListSearch } : {}),
     }),
-    [filterParams, conversationPage]
+    [filterParams, conversationPage, debouncedListSearch]
   );
 
   // Fetch conversations from API
-  const { data: conversationsData, isLoading, isError, error } = useConversations(conversationQueryFilters);
+  const { data: conversationsData, isLoading, isError, error, isFetching } = useConversations(conversationQueryFilters);
 
   // Fetch selected conversation details
   const { data: selectedConversationData } = useConversation(selectedConversationId);
@@ -77,6 +87,9 @@ export default function ConversationsPage() {
   const conversations = conversationsData?.conversations || [];
   const listPagination = conversationsData?.pagination;
   const selectedConversation = selectedConversationData || null;
+  const totalInQuery = listPagination?.total ?? 0;
+  const hasActiveServerSearch = debouncedListSearch.length > 0;
+  const showAccountEmpty = !hasActiveServerSearch && totalInQuery === 0;
 
   // Support deep-linking from email: /conversations?conversationId=<id>
   useEffect(() => {
@@ -93,7 +106,7 @@ export default function ConversationsPage() {
 
   useEffect(() => {
     setConversationPage(1);
-  }, [filter]);
+  }, [filter, debouncedListSearch]);
 
   // Track which conversations have already shown transcript toast
   const transcriptToastShown = useRef<Set<string>>(new Set());
@@ -393,8 +406,8 @@ export default function ConversationsPage() {
         {/* Column 1 - Filters */}
         <ConversationFilters onFilterChange={setFilter} selectedFilter={filter} />
 
-        {/* Column 2 - Conversation List */}
-        {conversations.length === 0 ? (
+        {/* Column 2 - Conversation List — keep list mounted when searching so empty results show in-panel */}
+        {showAccountEmpty ? (
           <div className="flex-1 overflow-hidden">
             <NoConversations />
           </div>
@@ -405,6 +418,10 @@ export default function ConversationsPage() {
             onSelectConversation={setSelectedConversationId}
             pagination={listPagination}
             onPageChange={setConversationPage}
+            searchQuery={conversationListSearch}
+            onSearchChange={setConversationListSearch}
+            appliedSearch={debouncedListSearch}
+            listFetching={isFetching && !isLoading}
           />
         )}
 

@@ -22,6 +22,13 @@ interface ConversationListProps {
   onSelectConversation?: (id: string) => void;
   pagination?: ConversationListPagination;
   onPageChange?: (page: number) => void;
+  /** Live input (search is sent to API after parent debounces to `appliedSearch`) */
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  /** Debounced term used for the last server request (for empty-state copy) */
+  appliedSearch: string;
+  /** List is refetching (e.g. new search); keep layout, subtle dim */
+  listFetching?: boolean;
 }
 
 export function ConversationList({
@@ -30,39 +37,21 @@ export function ConversationList({
   onSelectConversation,
   pagination,
   onPageChange,
+  searchQuery,
+  onSearchChange,
+  appliedSearch,
+  listFetching,
 }: ConversationListProps) {
   const queryClient = useQueryClient();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [statusFilter, setStatusFilter] = useState("all"); // Changed from "open" to "all"
   const [sortBy, setSortBy] = useState("recent");
-  const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Filter and sort conversations
+  // Filter and sort conversations (search is server-side across all pages)
   const filteredConversations = useMemo(() => {
     let filtered = [...conversations];
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (conv) => {
-          // Safely check customer fields with null/undefined handling
-          const customerName = conv.customer?.name?.toLowerCase() || '';
-          const customerEmail = conv.customer?.email?.toLowerCase() || '';
-          const customerPhone = conv.customer?.phone?.toLowerCase() || '';
-          const lastMessage = conv.lastMessage?.toLowerCase() || '';
-          
-          return (
-            customerName.includes(query) ||
-            customerEmail.includes(query) ||
-            customerPhone.includes(query) ||
-            lastMessage.includes(query)
-          );
-        }
-      );
-    }
 
     // Apply status filter
     if (statusFilter && statusFilter !== "all") {
@@ -84,7 +73,7 @@ export function ConversationList({
     }
 
     return filtered;
-  }, [conversations, searchQuery, statusFilter, sortBy]);
+  }, [conversations, statusFilter, sortBy]);
 
   const limit = pagination?.limit ?? 25;
   const totalPages =
@@ -110,6 +99,12 @@ export function ConversationList({
     scrollAreaRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [pagination?.page]);
 
+  useEffect(() => {
+    if (searchQuery.trim()) setShowSearch(true);
+  }, [searchQuery]);
+
+  const searchPanelOpen = showSearch || searchQuery.length > 0;
+
   return (
     <div className="w-[400px] bg-card/50 backdrop-blur-sm border-r border-border/60 h-full flex flex-col shadow-[2px_0_8px_rgba(0,0,0,0.04)] overflow-hidden">
       {/* Premium Header */}
@@ -122,7 +117,7 @@ export function ConversationList({
           <button 
             onClick={() => setShowSearch(!showSearch)}
             className={`p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200 cursor-pointer ${
-              showSearch ? "text-foreground bg-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+              searchPanelOpen ? "text-foreground bg-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Search className="w-[18px] h-[18px]" />
@@ -139,15 +134,15 @@ export function ConversationList({
       </div>
 
       {/* Premium Search Bar */}
-      {showSearch && (
+      {searchPanelOpen && (
         <div className="px-5 py-4 border-b border-border/50 bg-gradient-to-br from-background/80 to-background/40 backdrop-blur-sm">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search conversations..."
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search name, phone, email, or message…"
               className="w-full bg-card/80 backdrop-blur-sm border border-border/50 rounded-xl pl-11 pr-4 py-3 text-sm font-medium text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:bg-card transition-all shadow-sm"
             />
           </div>
@@ -183,7 +178,10 @@ export function ConversationList({
       )}
 
       {/* Conversation Cards */}
-      <div ref={scrollAreaRef} className="flex-1 overflow-y-auto min-h-0">
+      <div
+        ref={scrollAreaRef}
+        className={`flex-1 overflow-y-auto min-h-0 transition-opacity ${listFetching ? "opacity-70" : ""}`}
+      >
         {filteredConversations.length > 0 ? (
           filteredConversations.map((conversation) => (
             <ConversationCard
@@ -203,11 +201,11 @@ export function ConversationList({
               <Search className="w-8 h-8 text-muted-foreground/60" />
             </div>
             <p className="text-sm font-bold text-foreground mb-2 tracking-tight">
-              {searchQuery ? "No conversations match your search" : "No conversations found"}
+              {appliedSearch ? "No conversations match your search" : "No conversations found"}
             </p>
-            {searchQuery && (
+            {appliedSearch && (
               <p className="text-xs text-muted-foreground/70 mt-1 font-medium">
-                Try adjusting your search or filters
+                Searches all conversations, not only this page. Try different keywords or filters.
               </p>
             )}
           </div>
