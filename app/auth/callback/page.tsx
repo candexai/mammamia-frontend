@@ -7,6 +7,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { LoadingLogo } from "@/components/LoadingLogo";
 import { authService, type User } from "@/services/auth.service";
 
+const HYDRATE_PROFILE_MS = 14_000;
+
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const id = window.setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+    p.then(
+      (v) => {
+        window.clearTimeout(id);
+        resolve(v);
+      },
+      (e) => {
+        window.clearTimeout(id);
+        reject(e);
+      }
+    );
+  });
+}
+
 function normalizeOAuthUser(raw: unknown): User | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
@@ -107,6 +127,25 @@ function AuthCallbackContent() {
       if (!user?.id) {
         fail();
         return;
+      }
+
+      if (cancelled) return;
+
+      if (userParam) {
+        try {
+          const full = await withTimeout(
+            authService.getCurrentUser(),
+            HYDRATE_PROFILE_MS,
+            "GET /auth/me (OAuth hydrate)"
+          );
+          user = full;
+          console.log("[OAuth Callback] Replaced redirect profile with full /auth/me payload");
+        } catch (e) {
+          console.warn(
+            "[OAuth Callback] Full profile hydrate skipped; using redirect payload (subscription/onboarding may be stale until next refresh)",
+            e
+          );
+        }
       }
 
       if (cancelled) return;
