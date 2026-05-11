@@ -18,8 +18,36 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [authInitSlow, setAuthInitSlow] = useState(false);
   const { login, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    console.log("[AuthPage] signin mounted", {
+      href: typeof window !== "undefined" ? window.location.href : "",
+      apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      online: typeof navigator !== "undefined" ? navigator.onLine : undefined
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      setAuthInitSlow(false);
+      return;
+    }
+    const id = window.setTimeout(() => {
+      console.warn(
+        "[AuthPage] signin: session check still running after 12s — form stays on “Checking authentication…”",
+        {
+          apiUrl: process.env.NEXT_PUBLIC_API_URL,
+          nextStep:
+            "Open DevTools → Network: look for /auth/me or failed requests. Console: messages from [Auth] or 🔐."
+        }
+      );
+      setAuthInitSlow(true);
+    }, 12_000);
+    return () => window.clearTimeout(id);
+  }, [loading]);
 
   useEffect(() => {
     // Only redirect if already authenticated on initial page load
@@ -56,7 +84,9 @@ export default function SignInPage() {
         throw new Error("Please complete the captcha verification");
       }
 
+      console.log("[AuthPage] signin submit → calling login API");
       const loggedInUser = await login(trimmedEmail, trimmedPassword, captchaToken);
+      console.log("[AuthPage] signin submit ← login API ok");
       toast.success("Login successful! Welcome back.");
       
       // STRICT: Only redirect to admin if role === 'admin' in database
@@ -73,7 +103,7 @@ export default function SignInPage() {
       const errorMessage = err instanceof Error ? err.message : "Invalid email or password";
       setError(errorMessage);
       toast.error(errorMessage);
-      console.error("Login error:", err);
+      console.error("[AuthPage] signin submit failed:", err);
     }
   };
 
@@ -88,9 +118,17 @@ export default function SignInPage() {
   if (loading && !email && !password) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4 max-w-md text-center">
           <div className="w-12 h-12 border-4 border-gray-300 dark:border-gray-700 border-t-primary rounded-full animate-spin" />
           <p className="text-muted-foreground">Checking authentication...</p>
+          {authInitSlow && (
+            <p className="text-sm text-muted-foreground border border-border rounded-md p-3 bg-muted/40">
+              This is taking longer than usual. Check the browser console for{" "}
+              <code className="text-xs">[AuthPage]</code> or <code className="text-xs">🔐</code> logs,
+              and Network for requests to your API (see{" "}
+              <code className="text-xs">NEXT_PUBLIC_API_URL</code>).
+            </p>
+          )}
         </div>
       </div>
     );

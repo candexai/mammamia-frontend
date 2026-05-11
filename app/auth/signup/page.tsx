@@ -31,6 +31,14 @@ export default function SignUpPage() {
     }
   }, [isAuthenticated, loading, router]);
 
+  useEffect(() => {
+    console.log("[AuthPage] signup mounted", {
+      href: typeof window !== "undefined" ? window.location.href : "",
+      apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      online: typeof navigator !== "undefined" ? navigator.onLine : undefined
+    });
+  }, []);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
@@ -61,18 +69,21 @@ export default function SignUpPage() {
 
     try {
       setSubmitting(true);
+      console.log("[AuthPage] signup submit → calling signup API");
       await authService.signup({
         name: cleanedName,
         email: cleanedEmail,
         password: cleanedPassword,
         captchaToken
       });
+      console.log("[AuthPage] signup submit ← signup API ok");
       toast.success("Signup successful! Welcome.");
       router.replace("/conversations");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Signup failed";
       setError(message);
       toast.error(message);
+      console.error("[AuthPage] signup submit failed:", err);
     } finally {
       setSubmitting(false);
     }

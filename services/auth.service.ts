@@ -73,7 +73,9 @@ class AuthService {
    */
   async login(credentials: LoginCredentials): Promise<User> {
     try {
+      console.log('[AuthClient] POST /auth/login …');
       const response: AuthResponse = await apiClient.post('/auth/login', credentials);
+      console.log('[AuthClient] POST /auth/login ok');
       
       const { user, token, refreshToken } = response.data;
 
@@ -83,6 +85,7 @@ class AuthService {
 
       return user;
     } catch (error: any) {
+      console.error('[AuthClient] POST /auth/login failed', error?.message || error);
       throw new Error(error.message || 'Login failed');
     }
   }
@@ -92,7 +95,9 @@ class AuthService {
    */
   async signup(data: SignupData): Promise<User> {
     try {
+      console.log('[AuthClient] POST /auth/signup …');
       const response: AuthResponse = await apiClient.post('/auth/signup', data);
+      console.log('[AuthClient] POST /auth/signup ok');
       
       const { user, token, refreshToken } = response.data;
 
@@ -102,6 +107,7 @@ class AuthService {
 
       return user;
     } catch (error: any) {
+      console.error('[AuthClient] POST /auth/signup failed', error?.message || error);
       throw new Error(error.message || 'Signup failed');
     }
   }

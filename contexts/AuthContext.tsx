@@ -36,7 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   useEffect(() => {
     const initAuth = async () => {
-      console.log('🔐 Initializing auth...');
+      console.log('🔐 Initializing auth...', {
+        pathname: typeof window !== 'undefined' ? window.location.pathname : '',
+        apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      });
       try {
         const isAuth = authService.isAuthenticated();
         console.log('🔐 Has token:', isAuth);
