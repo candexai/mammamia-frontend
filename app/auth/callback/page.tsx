@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingLogo } from "@/components/LoadingLogo";
+import { authService } from "@/services/auth.service";
 
 /**
  * OAuth Callback Component
@@ -38,6 +39,7 @@ function AuthCallbackContent() {
 
       if (error) {
         const errorMessage = error.replace(/_/g, " ");
+        authService.clearLocalSession();
         toast.error(`Authentication failed: ${errorMessage}`);
         router.replace("/auth/signin");
         return;
@@ -86,10 +88,12 @@ function AuthCallbackContent() {
           })
           .catch((error) => {
             console.error("Error fetching user data:", error);
+            authService.clearLocalSession();
             toast.error("Authentication failed. Please try again.");
             router.replace("/auth/signin");
           });
       } else {
+        authService.clearLocalSession();
         toast.error("Authentication failed. Please try again.");
         router.replace("/auth/signin");
       }

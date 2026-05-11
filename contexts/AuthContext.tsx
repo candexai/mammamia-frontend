@@ -26,6 +26,28 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTH_ME_BOOTSTRAP_MS = 15_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const id = window.setTimeout(() => {
+      reject(
+        Object.assign(new Error(`${label} timed out after ${ms}ms`), { status: 0 })
+      );
+    }, ms);
+    promise.then(
+      (v) => {
+        window.clearTimeout(id);
+        resolve(v);
+      },
+      (e) => {
+        window.clearTimeout(id);
+        reject(e);
+      }
+    );
+  });
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isAuth) {
           const storedUser = authService.getStoredUser();
           console.log('🔐 Stored user:', storedUser ? 'Found' : 'Not found');
+          if (!storedUser) {
+            console.warn(
+              '🔐 Access token exists but `user` is missing from localStorage — profile must load from /auth/me. If the app spins forever, /auth/me or token refresh is hanging or failing.'
+            );
+          }
 
           if (storedUser) {
             setUser(storedUser);
@@ -62,7 +89,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           try {
             console.log('🔐 Fetching fresh user data...');
-            const currentUser = await authService.getCurrentUser();
+            const currentUser = await withTimeout(
+              authService.getCurrentUser(),
+              AUTH_ME_BOOTSTRAP_MS,
+              'GET /auth/me (bootstrap)'
+            );
 
             if (currentUser && currentUser.id) {
               setUser(currentUser);
@@ -78,18 +109,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               : undefined;
             const message = error instanceof Error ? error.message : '';
 
-            // If we're returning from OAuth callback, preserve the session
-            // The user is still authenticated, just the API call might have failed temporarily
-            if (isOAuthCallback && storedUser) {
-              console.log('🔐 OAuth callback detected - preserving user session');
-              // Keep the stored user, don't log out
+            const shouldPreserveOAuthSession = isOAuthCallback && !!storedUser;
+            const isUnauthorized =
+              status === 401 ||
+              message.includes('401') ||
+              /unauthoriz/i.test(message);
+
+            if (shouldPreserveOAuthSession) {
+              console.log('🔐 OAuth callback detected - preserving cached user after /auth/me error');
+            } else if (isUnauthorized) {
+              console.log('🔐 Session invalid (401) — clearing local auth');
+              authService.clearLocalSession();
+              setUser(null);
             } else if (!storedUser) {
-              // Only log out if we don't have a stored user AND it's not an OAuth callback
-              if (status === 401 || message.includes('401')) {
-                console.log('🔐 No stored user and 401 error - logging out');
-                authService.logout();
-                setUser(null);
-              }
+              console.log(
+                '🔐 No cached user and /auth/me failed — clearing token-only / broken session',
+                { status, message: message.slice(0, 160) }
+              );
+              authService.clearLocalSession();
+              setUser(null);
+            } else {
+              console.warn(
+                '🔐 Kept cached user after /auth/me failure (network, timeout, or server error)',
+                { status }
+              );
             }
           } finally {
             setLoading(false);

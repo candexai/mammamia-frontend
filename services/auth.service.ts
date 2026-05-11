@@ -151,7 +151,13 @@ class AuthService {
       return user;
     } catch (error: any) {
       console.error('❌ getCurrentUser error:', error);
-      throw new Error(error.message || 'Failed to get user');
+      const err = new Error(error.message || 'Failed to get user') as Error & {
+        status?: number;
+        data?: unknown;
+      };
+      if (typeof error?.status === 'number') err.status = error.status;
+      if (error?.data !== undefined) err.data = error.data;
+      throw err;
     }
   }
 
@@ -294,14 +300,22 @@ class AuthService {
   }
 
   /**
-   * Clear all stored data
+   * Clear all stored auth in the browser without calling the API.
+   * Use when the session is invalid or incomplete (e.g. tokens without `user`).
    */
-  private clearStorage(): void {
+  clearLocalSession(): void {
     if (typeof window === 'undefined') return;
-    
+
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+  }
+
+  /**
+   * Clear all stored data (used by logout after server call)
+   */
+  private clearStorage(): void {
+    this.clearLocalSession();
   }
 }
 
