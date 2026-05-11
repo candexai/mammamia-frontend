@@ -10,7 +10,9 @@ export function useConversations(filters?: ConversationFilters) {
     queryKey: ['conversations', filters],
     queryFn: () => conversationService.getAll(filters),
     staleTime: 20_000,
-    refetchInterval: 45_000,
+    // Polling is disabled — real-time updates are driven by WebSocket events in the conversations page.
+    // A full refetch still happens on window focus (React Query default).
+    refetchInterval: false,
     refetchIntervalInBackground: false,
   });
 }

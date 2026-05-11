@@ -145,17 +145,11 @@ export default function ConversationsPage() {
 
     const handleNewConversation = (data: any) => {
       try {
-        console.log('[ConversationsPage] 🆕 New conversation received:', data);
-        
-        // Show toast notification
         toast.success('New conversation created!', {
           description: `From ${data.customerId?.name || 'Unknown'}`
         });
-        
-        // Invalidate conversations query to trigger refetch
+        // New conversation requires a full list refetch — we don't have enough data to insert it locally.
         queryClient.invalidateQueries({ queryKey: ['conversations'] });
-        
-        console.log('[ConversationsPage] ✅ Invalidated conversations query');
       } catch (error) {
         console.error('[ConversationsPage] Error handling new conversation:', error);
       }
@@ -163,22 +157,50 @@ export default function ConversationsPage() {
 
     const handleNewMessage = (data: any) => {
       try {
-        console.log('[ConversationsPage] 💬 New message received:', data);
-        
-        // If this message is for the currently selected conversation, update it
+        // Update the specific conversation detail cache if it is open.
         if (data.conversationId === selectedConversationId) {
           queryClient.invalidateQueries({ queryKey: ['conversation', data.conversationId] });
         }
-        
-        // Also invalidate conversations list to update last message
-        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+
+        // Update the last-message preview in the list cache without a full refetch.
+        // Walk all cached conversation list queries and patch the affected row in-place.
+        queryClient.setQueriesData<any>(
+          { queryKey: ['conversations'], exact: false },
+          (old: any) => {
+            if (!old) return old;
+
+            const msg = data.message;
+            const patchRow = (conv: any) => {
+              if (conv._id?.toString() !== data.conversationId?.toString()) return conv;
+              return {
+                ...conv,
+                lastMessage: msg
+                  ? { id: msg.id, text: msg.text, sender: msg.sender, timestamp: msg.timestamp }
+                  : conv.lastMessage,
+                updatedAt: msg?.timestamp ?? conv.updatedAt,
+                unread: true
+              };
+            };
+
+            // Handle both paginated `{ conversations: [] }` and plain array shapes.
+            if (Array.isArray(old)) return old.map(patchRow);
+            if (Array.isArray(old?.conversations)) {
+              return { ...old, conversations: old.conversations.map(patchRow) };
+            }
+            if (Array.isArray(old?.items)) {
+              return { ...old, items: old.items.map(patchRow) };
+            }
+            return old;
+          }
+        );
       } catch (error) {
         console.error('[ConversationsPage] Error handling new message:', error);
       }
     };
 
-    const handleBatchConversationsSynced = (data: any) => {
+    const handleBatchConversationsSynced = (_data: any) => {
       try {
+        // Batch sync can add many conversations — full refetch is necessary.
         queryClient.invalidateQueries({ queryKey: ['conversations'] });
       } catch (error) {
         console.error('[ConversationsPage] Error handling batch sync event:', error);
@@ -187,42 +209,20 @@ export default function ConversationsPage() {
 
     const handleTranscriptUpdated = (data: any) => {
       try {
-        console.log('[ConversationsPage] 📝 Transcript updated:', data);
-        
         const conversationId = data.conversationId?.toString() || '';
-        
-        // Only show toast once per conversation, and only when both transcript and audio are ready
-        // OR if transcript is ready and we haven't shown toast for this conversation yet
         const hasTranscript = data.hasTranscript === true;
         const hasRecording = data.hasRecording === true;
         const alreadyShown = transcriptToastShown.current.has(conversationId);
-        
-        // Show toast only if:
-        // 1. Transcript is ready
-        // 2. We haven't shown toast for this conversation yet
-        // 3. Either both transcript and recording are ready, OR we'll show it when transcript is ready (audio might come later)
+
         if (hasTranscript && !alreadyShown) {
-          // Mark as shown immediately to prevent duplicate toasts
           transcriptToastShown.current.add(conversationId);
-          
-          // Show toast with appropriate message
-          if (hasTranscript && hasRecording) {
-            toast.success('Call transcript and recording ready!');
-          } else {
-            toast.success('Call transcript ready!');
-          }
-          
-          console.log('[ConversationsPage] ✅ Transcript toast shown for conversation:', conversationId);
-        } else if (hasTranscript && alreadyShown) {
-          console.log('[ConversationsPage] ⏭️ Skipping duplicate transcript toast for conversation:', conversationId);
+          toast.success(hasRecording ? 'Call transcript and recording ready!' : 'Call transcript ready!');
         }
-        
-        // Invalidate conversations query to show updated data
-        queryClient.invalidateQueries({ queryKey: ['conversations'] });
-        
-        // If this conversation is currently selected, invalidate it too
-        if (data.conversationId === selectedConversationId) {
-          queryClient.invalidateQueries({ queryKey: ['conversation', data.conversationId] });
+
+        // Only invalidate the specific conversation that changed — not the entire list.
+        // Transcript content is not shown in the list view.
+        if (conversationId) {
+          queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
         }
       } catch (error) {
         console.error('[ConversationsPage] Error handling transcript update:', error);

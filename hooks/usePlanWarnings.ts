@@ -22,8 +22,8 @@ export function usePlanWarnings() {
       const response = await apiClient.get<{ data: { warnings: PlanWarning[], lockStatus: PlanLockStatus } }>('/plan-warnings');
       return response.data || { warnings: [], lockStatus: { locked: false, reason: null } };
     },
-    refetchInterval: 60000, // Refetch every minute
-    staleTime: 30000, // Consider data stale after 30 seconds
+    refetchInterval: 5 * 60_000, // Refetch every 5 minutes (plan limits change infrequently)
+    staleTime: 5 * 60_000,
   });
 }
 
