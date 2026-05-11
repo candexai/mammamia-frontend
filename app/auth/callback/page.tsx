@@ -1,11 +1,46 @@
 "use client";
 
-import { useEffect, Suspense, useState, useRef } from "react";
+import { useEffect, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingLogo } from "@/components/LoadingLogo";
-import { authService } from "@/services/auth.service";
+import { authService, type User } from "@/services/auth.service";
+
+function normalizeOAuthUser(raw: unknown): User | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  if (typeof o.id !== "string" || typeof o.email !== "string") return null;
+
+  const name =
+    typeof o.name === "string" && o.name.trim()
+      ? o.name
+      : typeof o.firstName === "string"
+        ? `${o.firstName} ${typeof o.lastName === "string" ? o.lastName : ""}`.trim()
+        : o.email;
+
+  return {
+    id: o.id,
+    email: o.email,
+    name,
+    firstName: typeof o.firstName === "string" ? o.firstName : undefined,
+    lastName: typeof o.lastName === "string" ? o.lastName : undefined,
+    avatar: typeof o.avatar === "string" ? o.avatar : undefined,
+    role: typeof o.role === "string" ? o.role : "operator",
+    isAdmin: o.isAdmin === true,
+    organizationId:
+      typeof o.organizationId === "string" ? o.organizationId : "",
+    status: typeof o.status === "string" ? o.status : "active",
+    createdAt:
+      typeof o.createdAt === "string"
+        ? o.createdAt
+        : new Date().toISOString(),
+    subscription:
+      o.subscription && typeof o.subscription === "object"
+        ? (o.subscription as User["subscription"])
+        : undefined,
+  };
+}
 
 /**
  * OAuth Callback Component
@@ -14,103 +49,103 @@ import { authService } from "@/services/auth.service";
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [showLoader, setShowLoader] = useState(true);
-  const startTimeRef = useRef(Date.now());
-
-  // ✅ GET CONTEXT METHOD
   const { setAuthFromOAuth } = useAuth();
+  const [fatal, setFatal] = useState(false);
 
   useEffect(() => {
-    // Ensure loader stays for at least 2.5 seconds
-    const minDisplayTime = 2500; // 2.5 seconds
-    const timer = setTimeout(() => {
-      setShowLoader(false);
-    }, minDisplayTime);
+    let cancelled = false;
 
-    return () => clearTimeout(timer);
-  }, []);
+    const fail = (message?: string) => {
+      if (cancelled) return;
+      authService.clearLocalSession();
+      if (message) toast.error(message);
+      else toast.error("Authentication failed. Please try again.");
+      router.replace("/auth/signin");
+      setFatal(true);
+    };
 
-  useEffect(() => {
-    const handleCallback = () => {
-      // Get tokens from URL params
-      const token = searchParams.get("token");
-      const refreshToken = searchParams.get("refreshToken");
+    const run = async () => {
       const error = searchParams.get("error");
-
       if (error) {
-        const errorMessage = error.replace(/_/g, " ");
-        authService.clearLocalSession();
-        toast.error(`Authentication failed: ${errorMessage}`);
-        router.replace("/auth/signin");
+        fail(`Authentication failed: ${error.replace(/_/g, " ")}`);
         return;
       }
 
-      if (token && refreshToken) {
-        // Store tokens
-        localStorage.setItem("accessToken", token);
-        localStorage.setItem("refreshToken", refreshToken);
+      const token = searchParams.get("token");
+      const refreshToken = searchParams.get("refreshToken");
+      if (!token || !refreshToken) {
+        fail();
+        return;
+      }
 
-        // Fetch user data
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL ||
-          "http://localhost:5001/api/v1";
+      localStorage.setItem("accessToken", token);
+      localStorage.setItem("refreshToken", refreshToken);
 
-        fetch(`${apiUrl}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.success && data.data) {
-              // Store user
-              localStorage.setItem("user", JSON.stringify(data.data));
+      let user: User | null = null;
+      const userParam = searchParams.get("user");
+      if (userParam) {
+        try {
+          user = normalizeOAuthUser(JSON.parse(userParam));
+        } catch (e) {
+          console.warn(
+            "[OAuth Callback] Could not parse user from URL; trying /auth/me",
+            e
+          );
+        }
+      }
 
-              // ✅ CRITICAL LINE (FIXES REFRESH ISSUE)
-              setAuthFromOAuth(data.data);
+      if (!user) {
+        try {
+          user = await authService.getCurrentUser();
+        } catch (e) {
+          console.error("[OAuth Callback] /auth/me failed:", e);
+          fail();
+          return;
+        }
+      }
 
-              toast.success("Login successful! Welcome.");
+      if (!user?.id) {
+        fail();
+        return;
+      }
 
-              console.log("[OAuth Callback] User logged in:", {
-                email: data.data.email,
-                role: data.data.role,
-              });
+      if (cancelled) return;
 
-              // Role-based redirect
-              if (data.data.role === "admin") {
-                router.replace("/admin");
-              } else {
-                router.replace("/conversations");
-              }
-            } else {
-              throw new Error("Failed to fetch user data");
-            }
-          })
-          .catch((error) => {
-            console.error("Error fetching user data:", error);
-            authService.clearLocalSession();
-            toast.error("Authentication failed. Please try again.");
-            router.replace("/auth/signin");
-          });
+      localStorage.setItem("user", JSON.stringify(user));
+      setAuthFromOAuth(user);
+      toast.success("Login successful! Welcome.");
+
+      console.log("[OAuth Callback] User logged in:", {
+        email: user.email,
+        role: user.role,
+      });
+
+      if (user.role === "admin") {
+        router.replace("/admin");
       } else {
-        authService.clearLocalSession();
-        toast.error("Authentication failed. Please try again.");
-        router.replace("/auth/signin");
+        router.replace("/conversations");
       }
     };
 
-    handleCallback();
+    void run().catch((e) => {
+      console.error("[OAuth Callback] Unexpected error:", e);
+      fail();
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [router, searchParams, setAuthFromOAuth]);
 
-  if (showLoader) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <LoadingLogo size="lg" text="Completing authentication..." />
-      </div>
-    );
+  if (fatal) {
+    return null;
   }
 
-  return null;
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <LoadingLogo size="lg" text="Completing authentication..." />
+    </div>
+  );
 }
 
 /**
