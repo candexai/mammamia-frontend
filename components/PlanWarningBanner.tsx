@@ -1,18 +1,44 @@
 "use client";
 
 import { usePlanWarnings } from "@/hooks/usePlanWarnings";
-import { AlertTriangle, XCircle, AlertCircle, X } from "lucide-react";
+import { AlertTriangle, XCircle, AlertCircle, X, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 
 import { usePathname } from "next/navigation";
 
 export function PlanWarningBanner() {
-  const { data, isLoading } = usePlanWarnings();
+  const { data, isLoading, isError, error, refetch, isRefetching } = usePlanWarnings();
   const [dismissed, setDismissed] = useState<string[]>([]);
   const pathname = usePathname();
 
-  if (isLoading || !data) {
+  if (isLoading) {
+    return null;
+  }
+
+  if (isError) {
+    const message =
+      error instanceof Error ? error.message : "Could not load plan usage. You can retry or continue; limits may be outdated.";
+    return (
+      <div className="fixed top-20 left-0 right-0 z-40 mx-auto max-w-6xl px-4 animate-in slide-in-from-top duration-300">
+        <div className="flex items-center gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-900 dark:text-amber-100 backdrop-blur-sm">
+          <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+          <p className="flex-1 text-sm font-medium">{message}</p>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            disabled={isRefetching}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-60"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
     return null;
   }
 

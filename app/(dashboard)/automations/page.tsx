@@ -12,16 +12,18 @@ import {
   mergeAutomationsWithDraft,
 } from "@/lib/automationsSessionStorage";
 import { useSidebar } from "@/contexts/SidebarContext";
-import { Zap, Activity, Plus, Sparkles } from "lucide-react";
+import { Zap, Activity, Plus, Sparkles, AlertCircle } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { LoadingLogo } from "@/components/LoadingLogo";
+import { toast } from "@/lib/toast";
 
 export default function AutomationsPage() {
   const { getSidebarWidth } = useSidebar();
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showPrebuiltModal, setShowPrebuiltModal] = useState(false);
   const [draftDirty, setDraftDirty] = useState(false);
   const [defaultSelection, setDefaultSelection] = useState<AutomationBuilderSelection | null>(null);
@@ -94,16 +96,26 @@ export default function AutomationsPage() {
   const loadAutomations = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get("/automations");
+      setLoadError(null);
+      const response = await apiClient.get<{
+        success?: boolean;
+        data?: unknown;
+        message?: string;
+      }>("/automations");
 
       let automationsList: any[] = [];
 
-      if (response.data?.success && response.data?.data) {
-        automationsList = Array.isArray(response.data.data) ? response.data.data : [];
-      } else if (Array.isArray(response.data)) {
-        automationsList = response.data;
-      } else if (response.data?.data && Array.isArray(response.data.data)) {
-        automationsList = response.data.data;
+      if (response && typeof response === "object") {
+        const body = response as Record<string, unknown>;
+        if (body.success === true && Array.isArray(body.data)) {
+          automationsList = body.data as any[];
+        } else if (Array.isArray((body as any).data?.data)) {
+          automationsList = (body as any).data.data;
+        } else if (Array.isArray(body.data)) {
+          automationsList = body.data as any[];
+        } else if (Array.isArray(response)) {
+          automationsList = response as any[];
+        }
       }
 
       let transformedAutomations: Automation[] = [];
@@ -150,6 +162,12 @@ export default function AutomationsPage() {
       setSessionDataRevision((r) => r + 1);
     } catch (error: any) {
       console.error("Error loading automations:", error);
+      const message =
+        typeof error?.message === "string" && error.message.trim()
+          ? error.message
+          : "Could not load automations. Check your connection and try again.";
+      setLoadError(message);
+      toast.error(message);
       setAutomations([]);
       automationsRef.current = [];
       setDraftDirty(false);
@@ -241,6 +259,22 @@ export default function AutomationsPage() {
           <UserMenu />
         </div>
       </div>
+
+      {loadError ? (
+        <div className="flex-shrink-0 border-b border-destructive/30 bg-destructive/10 px-8 py-3">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-foreground">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" aria-hidden />
+            <p className="flex-1 min-w-0 font-medium">{loadError}</p>
+            <button
+              type="button"
+              onClick={() => void loadAutomations()}
+              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Main Content Area - Full Space for Automation Builder */}
       <div className="flex-1 overflow-hidden bg-background">

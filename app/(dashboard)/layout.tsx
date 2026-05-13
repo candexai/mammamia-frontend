@@ -18,7 +18,7 @@ export default function Layout({
 
   useEffect(() => {
     // Show onboarding modal if user is logged in and hasn't completed onboarding
-    if (!loading && user && !user.onboardingCompleted) {
+    if (!loading && user && user.onboardingCompleted === false) {
       setShowOnboarding(true);
     }
   }, [user, loading]);

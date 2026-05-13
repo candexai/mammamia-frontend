@@ -27,10 +27,24 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   });
 }
 
+function coerceId(raw: unknown): string | null {
+  if (typeof raw === "string" && raw.trim()) return raw.trim();
+  if (raw != null && typeof raw === "object" && "$oid" in (raw as object)) {
+    const oid = (raw as { $oid?: string }).$oid;
+    if (typeof oid === "string") return oid;
+  }
+  if (raw != null && typeof (raw as { toString?: () => string }).toString === "function") {
+    const s = String(raw);
+    if (s && s !== "[object Object]") return s;
+  }
+  return null;
+}
+
 function normalizeOAuthUser(raw: unknown): User | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  if (typeof o.id !== "string" || typeof o.email !== "string") return null;
+  const id = coerceId(o.id) ?? coerceId(o._id);
+  if (!id || typeof o.email !== "string") return null;
 
   const name =
     typeof o.name === "string" && o.name.trim()
@@ -39,8 +53,26 @@ function normalizeOAuthUser(raw: unknown): User | null {
         ? `${o.firstName} ${typeof o.lastName === "string" ? o.lastName : ""}`.trim()
         : o.email;
 
+  const orgRaw = o.organizationId;
+  const organizationId =
+    typeof orgRaw === "string"
+      ? orgRaw
+      : orgRaw != null
+        ? String(orgRaw)
+        : "";
+
+  const onboardingRaw = o.onboardingCompleted;
+  const onboardingCompleted: boolean | undefined =
+    typeof onboardingRaw === "boolean"
+      ? onboardingRaw
+      : onboardingRaw === "true"
+        ? true
+        : onboardingRaw === "false"
+          ? false
+          : undefined;
+
   return {
-    id: o.id,
+    id,
     email: o.email,
     name,
     firstName: typeof o.firstName === "string" ? o.firstName : undefined,
@@ -48,13 +80,21 @@ function normalizeOAuthUser(raw: unknown): User | null {
     avatar: typeof o.avatar === "string" ? o.avatar : undefined,
     role: typeof o.role === "string" ? o.role : "operator",
     isAdmin: o.isAdmin === true,
-    organizationId:
-      typeof o.organizationId === "string" ? o.organizationId : "",
+    organizationId,
     status: typeof o.status === "string" ? o.status : "active",
     createdAt:
       typeof o.createdAt === "string"
         ? o.createdAt
         : new Date().toISOString(),
+    phone: typeof o.phone === "string" ? o.phone : undefined,
+    companyName: typeof o.companyName === "string" ? o.companyName : undefined,
+    companyWebsite: typeof o.companyWebsite === "string" ? o.companyWebsite : undefined,
+    vat: typeof o.vat === "string" ? o.vat : undefined,
+    street: typeof o.street === "string" ? o.street : undefined,
+    city: typeof o.city === "string" ? o.city : undefined,
+    state: typeof o.state === "string" ? o.state : undefined,
+    country: typeof o.country === "string" ? o.country : undefined,
+    onboardingCompleted,
     subscription:
       o.subscription && typeof o.subscription === "object"
         ? (o.subscription as User["subscription"])

@@ -156,9 +156,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (email: string, password: string, captchaToken: string): Promise<User> => {
       try {
         setLoading(true);
-        const user = await authService.login({ email, password, captchaToken });
-        setUser(user);
-        return user;
+        const userFromLogin = await authService.login({ email, password, captchaToken });
+        setUser(userFromLogin);
+
+        try {
+          const fresh = await withTimeout(
+            authService.getCurrentUser(),
+            AUTH_ME_BOOTSTRAP_MS,
+            'GET /auth/me (post-login)'
+          );
+          if (fresh?.id) {
+            setUser(fresh);
+            localStorage.setItem('user', JSON.stringify(fresh));
+            return fresh;
+          }
+        } catch (e) {
+          console.warn(
+            '🔐 Post-login /auth/me failed; using login payload until next refresh',
+            e
+          );
+        }
+
+        return userFromLogin;
       } finally {
         setLoading(false);
       }

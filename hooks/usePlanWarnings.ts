@@ -15,13 +15,32 @@ export interface PlanLockStatus {
   reason: string | null;
 }
 
+export interface PlanWarningsResult {
+  warnings: PlanWarning[];
+  lockStatus: PlanLockStatus;
+}
+
 export function usePlanWarnings() {
-  return useQuery<{ warnings: PlanWarning[], lockStatus: PlanLockStatus }>({
+  return useQuery<PlanWarningsResult>({
     queryKey: ['plan-warnings'],
     queryFn: async () => {
-      const response = await apiClient.get<{ data: { warnings: PlanWarning[], lockStatus: PlanLockStatus } }>('/plan-warnings');
-      return response.data || { warnings: [], lockStatus: { locked: false, reason: null } };
+      const response = await apiClient.get<{
+        success?: boolean;
+        data?: { warnings: PlanWarning[]; lockStatus: PlanLockStatus };
+      }>('/plan-warnings');
+
+      const payload = response?.data;
+      if (!payload || typeof payload !== 'object') {
+        throw new Error('Invalid plan-warnings response');
+      }
+
+      return {
+        warnings: Array.isArray(payload.warnings) ? payload.warnings : [],
+        lockStatus: payload.lockStatus ?? { locked: false, reason: null },
+      };
     },
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
     refetchInterval: 5 * 60_000, // Refetch every 5 minutes (plan limits change infrequently)
     staleTime: 5 * 60_000,
   });
