@@ -11,6 +11,8 @@ export interface ConversationFilters {
   search?: string;
   startDate?: string;
   endDate?: string;
+  /** Last N days window based on updatedAt (1–365). Default 7 on the server. */
+  dateRangeDays?: number;
   page?: number;
   limit?: number;
 }

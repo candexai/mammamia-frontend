@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ConversationFilters } from "@/components/conversations/ConversationFilters";
 import { ConversationList } from "@/components/conversations/ConversationList";
 import { ConversationDetail } from "@/components/conversations/ConversationDetail";
+import { DateRangePicker } from "@/components/conversations/DateRangePicker";
 import { useConversations, useConversation } from "@/hooks/useConversations";
 import { ConversationListSkeleton } from "@/components/LoadingSkeleton";
 import { NoConversations } from "@/components/EmptyState";
@@ -18,6 +19,8 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { MessageSquare, Activity, MessageCircle, Phone, Instagram, Facebook, Hash } from "lucide-react";
 
+const DEFAULT_DATE_RANGE_DAYS = 7;
+
 const CONVERSATIONS_PAGE_SIZE = 25;
 
 export default function ConversationsPage() {
@@ -29,6 +32,7 @@ export default function ConversationsPage() {
     string | null
   >(null);
   const [filter, setFilter] = useState("all");
+  const [dateRangeDays, setDateRangeDays] = useState(DEFAULT_DATE_RANGE_DAYS);
   const [conversationPage, setConversationPage] = useState(1);
   const [conversationListSearch, setConversationListSearch] = useState("");
   const [debouncedListSearch, setDebouncedListSearch] = useState("");
@@ -75,8 +79,11 @@ export default function ConversationsPage() {
       page: conversationPage,
       limit: CONVERSATIONS_PAGE_SIZE,
       ...(debouncedListSearch ? { search: debouncedListSearch } : {}),
+      // When search is active widen to all history (365 days cap) so users
+      // find old threads. Otherwise use the selected date range window.
+      dateRangeDays: debouncedListSearch ? 365 : dateRangeDays,
     }),
-    [filterParams, conversationPage, debouncedListSearch]
+    [filterParams, conversationPage, debouncedListSearch, dateRangeDays]
   );
 
   // Fetch conversations from API (paginated; keepPreviousData avoids blanking the list between pages/filters)
@@ -113,7 +120,7 @@ export default function ConversationsPage() {
 
   useEffect(() => {
     setConversationPage(1);
-  }, [filter, debouncedListSearch]);
+  }, [filter, debouncedListSearch, dateRangeDays]);
 
   // Track which conversations have already shown transcript toast
   const transcriptToastShown = useRef<Set<string>>(new Set());
@@ -308,7 +315,7 @@ export default function ConversationsPage() {
         </div>
 
         {/* Premium Platform Toggle Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs font-bold text-muted-foreground/70 uppercase tracking-widest mr-1">Platform:</span>
           <div className="flex items-center gap-1.5 bg-card/80 backdrop-blur-sm p-1.5 rounded-xl border border-border/50 shadow-sm">
             <button
@@ -379,6 +386,16 @@ export default function ConversationsPage() {
               <span>Phone</span>
             </button>
           </div>
+
+          {/* Date range picker — hidden when search is active (range widens automatically) */}
+          {!debouncedListSearch && (
+            <DateRangePicker value={dateRangeDays} onChange={setDateRangeDays} />
+          )}
+          {debouncedListSearch && (
+            <span className="text-xs text-muted-foreground/70 italic">
+              Searching all history
+            </span>
+          )}
         </div>
       </div>
 
@@ -424,6 +441,8 @@ export default function ConversationsPage() {
             onSearchChange={setConversationListSearch}
             appliedSearch={debouncedListSearch}
             listFetching={isFetching && !isLoading}
+            dateRangeDays={debouncedListSearch ? 365 : dateRangeDays}
+            isSearchActive={!!debouncedListSearch}
           />
         )}
 

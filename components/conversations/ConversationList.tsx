@@ -29,6 +29,10 @@ interface ConversationListProps {
   appliedSearch: string;
   /** List is refetching (e.g. new search); keep layout, subtle dim */
   listFetching?: boolean;
+  /** Active date-range window in days (passed for display in empty-state copy) */
+  dateRangeDays?: number;
+  /** True when a search term is active (range is widened to all history) */
+  isSearchActive?: boolean;
 }
 
 export function ConversationList({
@@ -41,6 +45,8 @@ export function ConversationList({
   onSearchChange,
   appliedSearch,
   listFetching,
+  dateRangeDays = 7,
+  isSearchActive = false,
 }: ConversationListProps) {
   const queryClient = useQueryClient();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -190,7 +196,6 @@ export function ConversationList({
               isSelected={selectedId === conversation.id}
               onClick={() => onSelectConversation?.(conversation.id)}
               onUpdate={() => {
-                // Refresh conversations list
                 queryClient.invalidateQueries({ queryKey: ['conversations'] });
               }}
             />
@@ -201,13 +206,15 @@ export function ConversationList({
               <Search className="w-8 h-8 text-muted-foreground/60" />
             </div>
             <p className="text-sm font-bold text-foreground mb-2 tracking-tight">
-              {appliedSearch ? "No conversations match your search" : "No conversations found"}
+              {appliedSearch
+                ? "No conversations match your search"
+                : `No conversations in the last ${dateRangeDays} day${dateRangeDays === 1 ? "" : "s"}`}
             </p>
-            {appliedSearch && (
-              <p className="text-xs text-muted-foreground/70 mt-1 font-medium">
-                Searches all conversations, not only this page. Try different keywords or filters.
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground/70 mt-1 font-medium">
+              {appliedSearch
+                ? "Searched all history — try different keywords or filters."
+                : "Try expanding the date range using the picker above."}
+            </p>
           </div>
         )}
       </div>
@@ -216,6 +223,11 @@ export function ConversationList({
         <div className="flex-shrink-0 border-t border-border/50 bg-gradient-to-br from-card/95 via-card/90 to-background/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground font-medium tabular-nums truncate min-w-0">
             {rangeStart}–{rangeEnd} of {pagination!.total}
+            {!isSearchActive && (
+              <span className="ml-1 text-muted-foreground/60">
+                (last {dateRangeDays}d)
+              </span>
+            )}
           </p>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
