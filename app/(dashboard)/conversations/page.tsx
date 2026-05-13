@@ -19,7 +19,8 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { MessageSquare, Activity, MessageCircle, Phone, Instagram, Facebook, Hash } from "lucide-react";
 
-const DEFAULT_DATE_RANGE_DAYS = 7;
+/** Default: conversations updated since local midnight today (1 calendar day window on the server). */
+const DEFAULT_DATE_RANGE_DAYS = 1;
 
 const CONVERSATIONS_PAGE_SIZE = 25;
 

@@ -8,10 +8,11 @@ interface DateRangePickerProps {
   onChange: (days: number) => void;
 }
 
-const PRESET_DAYS = [7, 15, 30] as const;
+const PRESET_DAYS = [1, 7, 15, 30] as const;
 type PresetDay = (typeof PRESET_DAYS)[number];
 
 const PRESET_LABELS: Record<PresetDay, string> = {
+  1: "Today",
   7: "Last 7 days",
   15: "Last 15 days",
   30: "Last 30 days",
@@ -39,7 +40,9 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   const isPreset = (PRESET_DAYS as readonly number[]).includes(value);
   const currentLabel = isPreset
     ? PRESET_LABELS[value as PresetDay]
-    : `Last ${value} days`;
+    : value === 1
+      ? "Today"
+      : `Last ${value} days`;
 
   const handlePreset = (days: PresetDay) => {
     onChange(days);
@@ -130,15 +133,15 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
           </div>
 
           {/* Reset to default */}
-          {value !== 7 && (
+          {value !== 1 && (
             <div className="border-t border-border/40 p-2">
               <button
                 type="button"
-                onClick={() => { onChange(7); setOpen(false); }}
+                onClick={() => { onChange(1); setOpen(false); }}
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/40 rounded-lg transition-colors"
               >
                 <X className="w-3 h-3" />
-                Reset to last 7 days
+                Reset to today
               </button>
             </div>
           )}

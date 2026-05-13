@@ -45,7 +45,7 @@ export function ConversationList({
   onSearchChange,
   appliedSearch,
   listFetching,
-  dateRangeDays = 7,
+  dateRangeDays = 1,
   isSearchActive = false,
 }: ConversationListProps) {
   const queryClient = useQueryClient();
