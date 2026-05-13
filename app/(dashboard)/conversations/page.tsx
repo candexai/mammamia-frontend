@@ -10,7 +10,6 @@ import { DateRangePicker } from "@/components/conversations/DateRangePicker";
 import { useConversations, useConversation } from "@/hooks/useConversations";
 import { ConversationListSkeleton } from "@/components/LoadingSkeleton";
 import { NoConversations } from "@/components/EmptyState";
-import { conversationService } from "@/services/conversation.service";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useSocket } from "@/hooks/useSocket";
 import { toast } from "sonner";
@@ -96,14 +95,14 @@ export default function ConversationsPage() {
   const conversations = conversationsData?.conversations || [];
   const listPagination = conversationsData?.pagination;
   const selectedConversation = selectedConversationData || null;
-  const totalInQuery = listPagination?.total ?? 0;
   const hasActiveServerSearch = debouncedListSearch.length > 0;
   /** Only after a successful response — avoids treating "still loading" as an empty account */
   const showAccountEmpty =
     !hasActiveServerSearch &&
     conversationsData !== undefined &&
     !isFetching &&
-    totalInQuery === 0;
+    conversations.length === 0 &&
+    !listPagination?.hasPrev; // not empty if we navigated past page 1 with no results
   const showInitialListSkeleton = !isError && isLoading && conversations.length === 0;
 
   // Support deep-linking from email: /conversations?conversationId=<id>
@@ -269,20 +268,6 @@ export default function ConversationsPage() {
       }
     };
   }, [socket, queryClient, selectedConversationId]);
-
-  // Prefetch the next page in the background so pagination feels instant.
-  useEffect(() => {
-    if (isError || !conversationsData?.pagination) return;
-    const p = conversationsData.pagination;
-    if (!p.hasNext || typeof p.page !== "number") return;
-    const nextPage = p.page + 1;
-    const nextFilters = { ...conversationQueryFilters, page: nextPage };
-    void queryClient.prefetchQuery({
-      queryKey: ["conversations", nextFilters],
-      queryFn: () => conversationService.getAll(nextFilters),
-      staleTime: 20_000,
-    });
-  }, [conversationQueryFilters, conversationsData?.pagination, isError, queryClient]);
 
   const handleCloseDetail = () => {
     setSelectedConversationId(null);

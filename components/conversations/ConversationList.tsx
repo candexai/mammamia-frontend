@@ -82,24 +82,14 @@ export function ConversationList({
   }, [conversations, statusFilter, sortBy]);
 
   const limit = pagination?.limit ?? 25;
-  const totalPages =
-    pagination?.totalPages ??
-    (pagination?.total != null
-      ? Math.max(1, Math.ceil(pagination.total / Math.max(limit, 1)))
-      : 1);
-  const showPagination =
-    !!pagination &&
-    typeof pagination.total === "number" &&
-    pagination.total > limit &&
-    typeof onPageChange === "function";
   const page = pagination?.page ?? 1;
   const hasPrev = pagination?.hasPrev ?? page > 1;
-  const hasNext = pagination?.hasNext ?? page < totalPages;
-  const rangeStart =
-    pagination?.total === 0 ? 0 : (page - 1) * limit + 1;
-  const rangeEnd = pagination?.total != null
-    ? Math.min(page * limit, pagination.total)
-    : 0;
+  const hasNext = pagination?.hasNext ?? false;
+  // Show pagination whenever we have previous or next pages available.
+  const showPagination =
+    !!pagination && (hasPrev || hasNext) && typeof onPageChange === "function";
+  const rangeStart = conversations.length === 0 ? 0 : (page - 1) * limit + 1;
+  const rangeEnd = rangeStart + conversations.length - 1;
 
   useEffect(() => {
     scrollAreaRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -224,7 +214,7 @@ export function ConversationList({
       {showPagination && (
         <div className="flex-shrink-0 border-t border-border/50 bg-gradient-to-br from-card/95 via-card/90 to-background/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground font-medium tabular-nums truncate min-w-0">
-            {rangeStart}–{rangeEnd} of {pagination!.total}
+            {rangeStart}–{rangeEnd}
             {!isSearchActive && (
               <span className="ml-1 text-muted-foreground/60">
                 {dateRangeDays === 1
@@ -243,8 +233,8 @@ export function ConversationList({
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs font-semibold text-foreground tabular-nums px-1 min-w-[4.5rem] text-center">
-              {page} / {totalPages}
+            <span className="text-xs font-semibold text-foreground tabular-nums px-1 min-w-[3rem] text-center">
+              p.{page}
             </span>
             <button
               type="button"
