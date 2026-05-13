@@ -1,4 +1,10 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+  keepPreviousData,
+} from '@tanstack/react-query';
 import { conversationService, ConversationFilters, SendMessageData } from '@/services/conversation.service';
 import { toast } from 'sonner';
 
@@ -11,9 +17,11 @@ export function useConversations(filters?: ConversationFilters) {
     queryFn: () => conversationService.getAll(filters),
     staleTime: 20_000,
     // Polling is disabled — real-time updates are driven by WebSocket events in the conversations page.
-    // A full refetch still happens on window focus (React Query default).
     refetchInterval: false,
     refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false,
+    // Keep the previous page visible while the next page or filter fetch runs (no full blank list).
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { DEV_CAPTCHA_BYPASS_TOKEN, shouldUseDevCaptchaBypass } from '@/lib/devCaptchaBypass';
 
 declare global {
   interface Window {
@@ -101,9 +102,18 @@ export function RecaptchaWidget({ onTokenChange }: RecaptchaWidgetProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const devBypass = shouldUseDevCaptchaBypass();
 
   useEffect(() => {
-    if (!siteKey) {
+    if (!devBypass) return;
+    onTokenChange(DEV_CAPTCHA_BYPASS_TOKEN);
+    return () => {
+      onTokenChange(null);
+    };
+  }, [devBypass, onTokenChange]);
+
+  useEffect(() => {
+    if (!siteKey || devBypass) {
       return;
     }
 
@@ -150,7 +160,18 @@ export function RecaptchaWidget({ onTokenChange }: RecaptchaWidgetProps) {
         window.grecaptcha.reset(widgetIdRef.current);
       }
     };
-  }, [onTokenChange, siteKey]);
+  }, [onTokenChange, siteKey, devBypass]);
+
+  if (devBypass) {
+    return (
+      <p className="text-xs text-muted-foreground border border-border rounded-md px-3 py-2 bg-muted/30">
+        Local: reCAPTCHA skipped when there is no <code className="text-[10px]">NEXT_PUBLIC_RECAPTCHA_SITE_KEY</code>{" "}
+        (localhost or development). If the API runs with <code className="text-[10px]">NODE_ENV=production</code>, set
+        backend <code className="text-[10px]">ALLOW_LOCAL_CAPTCHA_BYPASS=true</code> for this dev machine only — never in
+        deployed production.
+      </p>
+    );
+  }
 
   if (!siteKey) {
     return <p className="text-sm text-destructive">Captcha is not configured. Missing NEXT_PUBLIC_RECAPTCHA_SITE_KEY.</p>;

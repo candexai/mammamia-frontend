@@ -3,16 +3,17 @@
 import { NodeBasedBuilder } from "@/components/automations/NodeBasedBuilder";
 import type { AutomationBuilderSelection } from "@/components/automations/NodeBasedBuilder";
 import { PrebuiltTemplatesModal } from "@/components/automations/PrebuiltTemplatesModal";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { apiClient } from "@/lib/api";
-import { Automation } from "@/data/mockAutomations";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Automation } from "@/data/mockAutomations";
 import {
   readAutomationsSession,
   writeAutomationsSession,
   mergeAutomationsWithDraft,
 } from "@/lib/automationsSessionStorage";
+import { AUTOMATIONS_QUERY_KEY, fetchAutomationsList } from "@/lib/automationsListQuery";
 import { useSidebar } from "@/contexts/SidebarContext";
-import { Zap, Activity, Plus, Sparkles, AlertCircle } from "lucide-react";
+import { Zap, Activity, Plus, Sparkles, AlertCircle, Loader2 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { UserMenu } from "@/components/layout/UserMenu";
@@ -20,9 +21,10 @@ import { LoadingLogo } from "@/components/LoadingLogo";
 import { toast } from "@/lib/toast";
 
 export default function AutomationsPage() {
+  const queryClient = useQueryClient();
   const { getSidebarWidth } = useSidebar();
   const [automations, setAutomations] = useState<Automation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [blockingInitialLoad, setBlockingInitialLoad] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showPrebuiltModal, setShowPrebuiltModal] = useState(false);
   const [draftDirty, setDraftDirty] = useState(false);
@@ -37,6 +39,22 @@ export default function AutomationsPage() {
     selectedNodeId: null,
   });
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const {
+    data: apiAutomations,
+    isPending,
+    isFetching,
+    isSuccess,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: AUTOMATIONS_QUERY_KEY,
+    queryFn: fetchAutomationsList,
+    staleTime: 7 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+  });
 
   useEffect(() => {
     automationsRef.current = automations;
@@ -85,106 +103,104 @@ export default function AutomationsPage() {
   const handleSaved = useCallback(() => {
     setDraftDirty(false);
     draftDirtyRef.current = false;
-    schedulePersist();
-  }, [schedulePersist]);
+    if (persistTimerRef.current) {
+      clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = null;
+    }
+    persistToSession();
+    void queryClient.invalidateQueries({ queryKey: AUTOMATIONS_QUERY_KEY });
+  }, [persistToSession, queryClient]);
 
-  // Set CSS variable for sidebar width so modal can use it
-  useEffect(() => {
-    document.documentElement.style.setProperty("--sidebar-width", `${getSidebarWidth()}px`);
-  }, [getSidebarWidth]);
-
-  const loadAutomations = useCallback(async () => {
-    try {
-      setLoading(true);
-      setLoadError(null);
-      const response = await apiClient.get<{
-        success?: boolean;
-        data?: unknown;
-        message?: string;
-      }>("/automations");
-
-      let automationsList: any[] = [];
-
-      if (response && typeof response === "object") {
-        const body = response as Record<string, unknown>;
-        if (body.success === true && Array.isArray(body.data)) {
-          automationsList = body.data as any[];
-        } else if (Array.isArray((body as any).data?.data)) {
-          automationsList = (body as any).data.data;
-        } else if (Array.isArray(body.data)) {
-          automationsList = body.data as any[];
-        } else if (Array.isArray(response)) {
-          automationsList = response as any[];
-        }
-      }
-
-      let transformedAutomations: Automation[] = [];
-      if (automationsList.length > 0) {
-        transformedAutomations = automationsList.map((auto: any) => ({
-          id: auto._id,
-          name: auto.name,
-          status: auto.isActive ? "enabled" : "disabled",
-          nodes: auto.nodes || [],
-          lastExecuted: auto.lastExecutedAt || null,
-          executionCount: auto.executionCount || 0,
-          createdAt: auto.createdAt,
-        }));
-      }
-
-      const persisted = readAutomationsSession();
-      let merged = transformedAutomations;
-      let nextDirty = false;
-
-      if (persisted?.dirty && persisted.automations) {
-        merged = mergeAutomationsWithDraft(transformedAutomations, persisted.automations);
-        nextDirty = true;
-      }
-
-      setAutomations(merged);
-      automationsRef.current = merged;
-      setDraftDirty(nextDirty);
-      draftDirtyRef.current = nextDirty;
-
-      if (persisted) {
-        selectionRef.current = {
-          selectedAutomationId: persisted.selectedAutomationId,
-          selectedNodeId: persisted.selectedNodeId,
-        };
-        setDefaultSelection({
-          selectedAutomationId: persisted.selectedAutomationId,
-          selectedNodeId: persisted.selectedNodeId,
-        });
-      } else {
-        setDefaultSelection(null);
-      }
-
-      persistToSession();
+  useLayoutEffect(() => {
+    const persisted = readAutomationsSession();
+    if (persisted?.automations?.length) {
+      setAutomations(persisted.automations);
+      automationsRef.current = persisted.automations;
+      setDraftDirty(!!persisted.dirty);
+      draftDirtyRef.current = !!persisted.dirty;
+      selectionRef.current = {
+        selectedAutomationId: persisted.selectedAutomationId,
+        selectedNodeId: persisted.selectedNodeId,
+      };
+      setDefaultSelection({
+        selectedAutomationId: persisted.selectedAutomationId,
+        selectedNodeId: persisted.selectedNodeId,
+      });
+      setBlockingInitialLoad(false);
       setSessionDataRevision((r) => r + 1);
-    } catch (error: any) {
-      console.error("Error loading automations:", error);
-      const message =
-        typeof error?.message === "string" && error.message.trim()
-          ? error.message
-          : "Could not load automations. Check your connection and try again.";
-      setLoadError(message);
-      toast.error(message);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isPending) {
+      setBlockingInitialLoad(false);
+    }
+  }, [isPending]);
+
+  useEffect(() => {
+    if (!isSuccess || apiAutomations === undefined) {
+      return;
+    }
+
+    const persisted = readAutomationsSession();
+    let merged = apiAutomations;
+    let nextDirty = false;
+
+    if (persisted?.dirty && persisted.automations) {
+      merged = mergeAutomationsWithDraft(apiAutomations, persisted.automations);
+      nextDirty = true;
+    }
+
+    draftDirtyRef.current = nextDirty;
+    setDraftDirty(nextDirty);
+    setAutomations(merged);
+    automationsRef.current = merged;
+
+    if (persisted) {
+      selectionRef.current = {
+        selectedAutomationId: persisted.selectedAutomationId,
+        selectedNodeId: persisted.selectedNodeId,
+      };
+      setDefaultSelection({
+        selectedAutomationId: persisted.selectedAutomationId,
+        selectedNodeId: persisted.selectedNodeId,
+      });
+    } else {
+      setDefaultSelection(null);
+    }
+
+    persistToSession();
+    setSessionDataRevision((r) => r + 1);
+  }, [isSuccess, apiAutomations, persistToSession]);
+
+  useEffect(() => {
+    if (!isError || error == null) {
+      return;
+    }
+    const message =
+      typeof (error as Error)?.message === "string" && (error as Error).message.trim()
+        ? (error as Error).message
+        : "Could not load automations.";
+    setLoadError(message);
+    toast.error(message);
+    if (automationsRef.current.length === 0) {
       setAutomations([]);
       automationsRef.current = [];
       setDraftDirty(false);
       draftDirtyRef.current = false;
       setDefaultSelection(null);
-    } finally {
-      setLoading(false);
     }
-  }, [persistToSession]);
+  }, [isError, error]);
 
   useEffect(() => {
-    loadAutomations();
-  }, [loadAutomations]);
+    if (isSuccess) {
+      setLoadError(null);
+    }
+  }, [isSuccess]);
 
-  const handleUseTemplate = async (_templateAutomation: Automation) => {
-    await loadAutomations();
-  };
+  const handleUseTemplate = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: AUTOMATIONS_QUERY_KEY });
+  }, [queryClient]);
 
   const handleNewAutomation = () => {
     if (nodeBuilderRef.current?.handleNewAutomation) {
@@ -192,7 +208,13 @@ export default function AutomationsPage() {
     }
   };
 
-  if (loading) {
+  const showSyncIndicator = isFetching && !isPending;
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--sidebar-width", `${getSidebarWidth()}px`);
+  }, [getSidebarWidth]);
+
+  if (blockingInitialLoad) {
     return (
       <div className="fixed inset-0 flex flex-col transition-all duration-300" style={{ left: `${getSidebarWidth()}px` }}>
         <div className="h-20 px-8 flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/5 via-primary/3 to-transparent backdrop-blur-sm shadow-sm flex-shrink-0 z-10">
@@ -223,7 +245,6 @@ export default function AutomationsPage() {
 
   return (
     <div className="fixed inset-0 flex flex-col transition-all duration-300" style={{ left: `${getSidebarWidth()}px` }}>
-      {/* Premium Page Header */}
       <div className="h-20 px-8 flex items-center justify-between border-b border-border/60 bg-gradient-to-br from-background via-background to-primary/[0.02] backdrop-blur-xl shadow-[0_1px_0_0_rgba(255,255,255,0.05)_inset] flex-shrink-0 z-10">
         <div className="flex items-center gap-5">
           <div className="relative">
@@ -238,6 +259,18 @@ export default function AutomationsPage() {
             </h1>
             <p className="text-sm text-muted-foreground/80 mt-1 font-medium">Create, manage, and launch workflow automations</p>
           </div>
+          {isPending ? (
+            <span className="ml-2 inline-flex items-center gap-2 text-xs font-medium text-muted-foreground" aria-live="polite">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              Syncing…
+            </span>
+          ) : null}
+          {showSyncIndicator ? (
+            <span className="ml-2 inline-flex items-center gap-2 text-xs font-medium text-muted-foreground" aria-live="polite">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              Updating…
+            </span>
+          ) : null}
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -267,7 +300,7 @@ export default function AutomationsPage() {
             <p className="flex-1 min-w-0 font-medium">{loadError}</p>
             <button
               type="button"
-              onClick={() => void loadAutomations()}
+              onClick={() => void refetch()}
               className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent"
             >
               Retry
@@ -276,7 +309,6 @@ export default function AutomationsPage() {
         </div>
       ) : null}
 
-      {/* Main Content Area - Full Space for Automation Builder */}
       <div className="flex-1 overflow-hidden bg-background">
         <NodeBasedBuilder
           ref={nodeBuilderRef}
@@ -289,7 +321,6 @@ export default function AutomationsPage() {
         />
       </div>
 
-      {/* Prebuilt Templates Modal */}
       <PrebuiltTemplatesModal
         isOpen={showPrebuiltModal}
         onClose={() => setShowPrebuiltModal(false)}

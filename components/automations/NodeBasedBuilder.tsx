@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, forwardRef, useImperativeHandle, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Plus, List, Trash2, Check, Zap, X, ArrowLeft, Loader2 } from "lucide-react";
 import { Automation, AutomationNode as NodeType, nodeServices } from "@/data/mockAutomations";
 import { AutomationNode } from "./AutomationNode";
@@ -9,6 +10,7 @@ import { NodeConfigPanel } from "./NodeConfigPanel";
 import { AutomationList } from "./AutomationList";
 import { ExecutionsModal } from "./ExecutionsModal";
 import { apiClient } from "@/lib/api";
+import { AUTOMATIONS_QUERY_KEY } from "@/lib/automationsListQuery";
 import { toast } from "@/lib/toast";
 
 export type AutomationBuilderSelection = {
@@ -34,6 +36,7 @@ export interface NodeBasedBuilderRef {
 }
 
 export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilderProps>(({ automations: initialAutomations, onAutomationsChange, onSelectionChange, onSaved, defaultSelection, selectionRevision = 0 }, ref) => {
+  const queryClient = useQueryClient();
   const [automations, setAutomations] = useState(initialAutomations);
   const [selectedAutomationId, setSelectedAutomationId] = useState<string | null>(() =>
     defaultSelection?.selectedAutomationId ?? initialAutomations[0]?.id ?? null
@@ -288,6 +291,7 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
       );
       updateAutomations(updatedAutomations);
 
+      void queryClient.invalidateQueries({ queryKey: AUTOMATIONS_QUERY_KEY });
       toast.success(`Automation ${isActive ? 'enabled' : 'disabled'} successfully`);
     } catch (error: any) {
       console.error('Toggle error:', error);
@@ -333,6 +337,7 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
         }
         setSelectedAutomationId(newAutomation.id);
         setSelectedNodeId(null);
+        void queryClient.invalidateQueries({ queryKey: AUTOMATIONS_QUERY_KEY });
         toast.success('New automation created');
       } else {
         console.error('Invalid response structure:', response);
@@ -432,6 +437,7 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
       setSelectedAutomationId(updatedAutomations[0]?.id || null);
       setSelectedNodeId(null);
 
+      void queryClient.invalidateQueries({ queryKey: AUTOMATIONS_QUERY_KEY });
       toast.success('Automation deleted successfully');
     } catch (error: any) {
       console.error('Delete error:', error);

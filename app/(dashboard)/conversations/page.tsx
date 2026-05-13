@@ -9,6 +9,7 @@ import { ConversationDetail } from "@/components/conversations/ConversationDetai
 import { useConversations, useConversation } from "@/hooks/useConversations";
 import { ConversationListSkeleton } from "@/components/LoadingSkeleton";
 import { NoConversations } from "@/components/EmptyState";
+import { conversationService } from "@/services/conversation.service";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useSocket } from "@/hooks/useSocket";
 import { toast } from "sonner";
@@ -78,7 +79,7 @@ export default function ConversationsPage() {
     [filterParams, conversationPage, debouncedListSearch]
   );
 
-  // Fetch conversations from API
+  // Fetch conversations from API (paginated; keepPreviousData avoids blanking the list between pages/filters)
   const { data: conversationsData, isLoading, isError, error, isFetching } = useConversations(conversationQueryFilters);
 
   // Fetch selected conversation details
@@ -89,7 +90,13 @@ export default function ConversationsPage() {
   const selectedConversation = selectedConversationData || null;
   const totalInQuery = listPagination?.total ?? 0;
   const hasActiveServerSearch = debouncedListSearch.length > 0;
-  const showAccountEmpty = !hasActiveServerSearch && totalInQuery === 0;
+  /** Only after a successful response — avoids treating "still loading" as an empty account */
+  const showAccountEmpty =
+    !hasActiveServerSearch &&
+    conversationsData !== undefined &&
+    !isFetching &&
+    totalInQuery === 0;
+  const showInitialListSkeleton = !isError && isLoading && conversations.length === 0;
 
   // Support deep-linking from email: /conversations?conversationId=<id>
   useEffect(() => {
@@ -255,49 +262,23 @@ export default function ConversationsPage() {
     };
   }, [socket, queryClient, selectedConversationId]);
 
+  // Prefetch the next page in the background so pagination feels instant.
+  useEffect(() => {
+    if (isError || !conversationsData?.pagination) return;
+    const p = conversationsData.pagination;
+    if (!p.hasNext || typeof p.page !== "number") return;
+    const nextPage = p.page + 1;
+    const nextFilters = { ...conversationQueryFilters, page: nextPage };
+    void queryClient.prefetchQuery({
+      queryKey: ["conversations", nextFilters],
+      queryFn: () => conversationService.getAll(nextFilters),
+      staleTime: 20_000,
+    });
+  }, [conversationQueryFilters, conversationsData?.pagination, isError, queryClient]);
+
   const handleCloseDetail = () => {
     setSelectedConversationId(null);
   };
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 flex flex-col transition-all duration-300" style={{ left: `${getSidebarWidth()}px` }}>
-        <div className="h-20 px-8 flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/5 via-primary/3 to-transparent backdrop-blur-sm shadow-sm flex-shrink-0">
-          <h1 className="text-2xl font-bold text-foreground">Conversations</h1>
-        </div>
-        <div className="flex-1 flex overflow-hidden">
-          <ConversationFilters onFilterChange={setFilter} />
-          <div className="flex-1 p-4 overflow-auto">
-            <ConversationListSkeleton count={5} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (isError) {
-    return (
-      <div className="fixed inset-0 flex flex-col transition-all duration-300" style={{ left: `${getSidebarWidth()}px` }}>
-        <div className="h-20 px-8 flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/5 via-primary/3 to-transparent backdrop-blur-sm shadow-sm flex-shrink-0">
-          <h1 className="text-2xl font-bold text-foreground">Conversations</h1>
-        </div>
-        <div className="flex-1 flex items-center justify-center overflow-hidden">
-          <div className="text-center">
-            <h2 className="text-xl font-bold text-destructive mb-2">Error Loading Conversations</h2>
-            <p className="text-muted-foreground">{error?.message || 'Failed to load conversations'}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 cursor-pointer"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 flex flex-col transition-all duration-300" style={{ left: `${getSidebarWidth()}px` }}>
@@ -411,6 +392,27 @@ export default function ConversationsPage() {
           <div className="flex-1 overflow-hidden">
             <NoConversations />
           </div>
+        ) : isError ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 border-r border-border/60 bg-card/30">
+            <h2 className="text-lg font-semibold text-destructive">Could not load conversations</h2>
+            <p className="text-sm text-muted-foreground text-center max-w-sm">
+              {error?.message || "Failed to load conversations"}
+            </p>
+            <button
+              type="button"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["conversations"] })}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 cursor-pointer text-sm"
+            >
+              Retry
+            </button>
+          </div>
+        ) : showInitialListSkeleton ? (
+          <div className="flex-1 min-w-0 overflow-hidden flex flex-col border-r border-border/60">
+            <div className="h-18 px-6 py-4 border-b border-border/50 bg-card/50 shrink-0" />
+            <div className="flex-1 p-4 overflow-auto">
+              <ConversationListSkeleton count={8} />
+            </div>
+          </div>
         ) : (
           <ConversationList
             conversations={conversations}
@@ -431,7 +433,7 @@ export default function ConversationsPage() {
             conversation={selectedConversation}
             onClose={handleCloseDetail}
           />
-        ) : conversations.length > 0 ? (
+        ) : conversations.length > 0 || showInitialListSkeleton ? (
           <div className="flex-1 bg-gradient-to-br from-background via-background to-primary/[0.01] flex items-center justify-center overflow-hidden">
             <div className="text-center max-w-md px-6">
               <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 via-primary/15 to-primary/10 flex items-center justify-center mx-auto mb-6 shadow-inner ring-1 ring-primary/10">

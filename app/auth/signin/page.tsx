@@ -18,7 +18,6 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const [authInitSlow, setAuthInitSlow] = useState(false);
   const { login, loading, isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -29,25 +28,6 @@ export default function SignInPage() {
       online: typeof navigator !== "undefined" ? navigator.onLine : undefined
     });
   }, []);
-
-  useEffect(() => {
-    if (!loading) {
-      setAuthInitSlow(false);
-      return;
-    }
-    const id = window.setTimeout(() => {
-      console.warn(
-        "[AuthPage] signin: session check still running after 12s — form stays on “Checking authentication…”",
-        {
-          apiUrl: process.env.NEXT_PUBLIC_API_URL,
-          nextStep:
-            "Open DevTools → Network: look for /auth/me or failed requests. Console: messages from [Auth] or 🔐."
-        }
-      );
-      setAuthInitSlow(true);
-    }, 12_000);
-    return () => window.clearTimeout(id);
-  }, [loading]);
 
   useEffect(() => {
     // Only redirect if already authenticated on initial page load
@@ -114,32 +94,20 @@ export default function SignInPage() {
     window.location.href = `${baseUrl}/api/v1/auth/google`;
   };
 
-  // Show loading spinner while checking authentication on page load
-  if (loading && !email && !password) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="flex flex-col items-center gap-4 max-w-md text-center">
-          <div className="w-12 h-12 border-4 border-gray-300 dark:border-gray-700 border-t-primary rounded-full animate-spin" />
-          <p className="text-muted-foreground">Checking authentication...</p>
-          {authInitSlow && (
-            <p className="text-sm text-muted-foreground border border-border rounded-md p-3 bg-muted/40">
-              This is taking longer than usual. Check the browser console for{" "}
-              <code className="text-xs">[AuthPage]</code> or <code className="text-xs">🔐</code> logs,
-              and Network for requests to your API (see{" "}
-              <code className="text-xs">NEXT_PUBLIC_API_URL</code>).
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       {/* Theme Toggle - Fixed Position */}
       <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />
       </div>
+
+      {loading ? (
+        <div className="fixed top-20 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none">
+          <p className="pointer-events-auto text-xs text-muted-foreground border border-border rounded-md px-3 py-1.5 bg-background/95 shadow-sm">
+            Checking for an existing session… If you are not signing in, you can still use the form below.
+          </p>
+        </div>
+      ) : null}
       
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="space-y-1 text-center">
@@ -163,7 +131,7 @@ export default function SignInPage() {
               variant="outline"
               className="w-full flex items-center justify-center gap-2 border-border hover:bg-accent"
               onClick={handleGoogleLogin}
-              disabled={loading}
+              disabled={false}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -211,7 +179,6 @@ export default function SignInPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="bg-background border-border text-foreground placeholder:text-muted-foreground"
-                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -226,7 +193,6 @@ export default function SignInPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="bg-background border-border text-foreground placeholder:text-muted-foreground"
-                disabled={loading}
               />
             </div>
             <RecaptchaWidget onTokenChange={setCaptchaToken} />

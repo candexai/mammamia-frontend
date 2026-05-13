@@ -140,11 +140,24 @@ class ApiClient {
         response: error.response, // Keep original response for backward compatibility
       };
     } else if (error.request) {
-      // Request made but no response
+      // Request made but no HTTP response (wrong URL, backend down, CORS, timeout, etc.)
+      const baseUrl = API_URL || "API";
+      const code = (error as any).code as string | undefined;
+      const msg = String((error as any).message || "");
+      let message = `Could not reach the API (${baseUrl}). Check that the backend is running and NEXT_PUBLIC_API_URL is correct.`;
+      if (code === "ECONNREFUSED" || msg.includes("ECONNREFUSED")) {
+        message = `Cannot connect to API at ${baseUrl}. Is the backend server running?`;
+      } else if (code === "ETIMEDOUT" || msg.toLowerCase().includes("timeout")) {
+        message = `Request to the API timed out (${baseUrl}). Try again or check server load.`;
+      } else if (code === "ERR_NETWORK" || msg === "Network Error") {
+        message = `Network error talking to ${baseUrl}. If the backend is up, check CORS or a browser extension blocking requests.`;
+      }
       return {
-        message: 'Network error. Please check your connection.',
+        message,
         status: 0,
         data: null,
+        isNetworkError: true as const,
+        code: code || undefined,
       };
     } else {
       // Something else happened
@@ -207,11 +220,29 @@ class ApiClient {
   }
 
   /**
-   * GET request
+   * GET request (one automatic retry for /automations on transient network failures).
    */
-  async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.client.get(url, config);
-    return response.data;
+  async get<T = any>(
+    url: string,
+    config?: AxiosRequestConfig & { _automationsNetworkRetry?: boolean }
+  ): Promise<T> {
+    try {
+      const response: AxiosResponse<T> = await this.client.get(url, config);
+      return response.data;
+    } catch (err: any) {
+      const path = url.split("?")[0].replace(/^\//, "");
+      const isAutomations = path === "automations";
+      if (
+        isAutomations &&
+        err?.isNetworkError &&
+        err?.status === 0 &&
+        !config?._automationsNetworkRetry
+      ) {
+        await new Promise((r) => setTimeout(r, 400));
+        return this.get<T>(url, { ...config, _automationsNetworkRetry: true });
+      }
+      throw err;
+    }
   }
 
   /**
