@@ -13,6 +13,20 @@ interface State {
   error?: Error;
 }
 
+/** After a new deploy, old tabs still reference removed `/_next/static/chunks/*.js` files. */
+function isStaleChunkOrModuleError(error: Error | undefined): boolean {
+  if (!error) return false;
+  const msg = error.message || '';
+  return (
+    error.name === 'ChunkLoadError' ||
+    /Loading chunk \d+ failed/i.test(msg) ||
+    /Failed to load chunk/i.test(msg) ||
+    /Importing a module script failed/i.test(msg) ||
+    /dynamically imported module/i.test(msg) ||
+    /from module \d+/i.test(msg)
+  );
+}
+
 /**
  * Error Boundary Component
  * Catches React errors and displays fallback UI
@@ -36,11 +50,23 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({ hasError: false, error: undefined });
   };
 
+  /** Resetting React state cannot fix a missing JS chunk; must fetch a fresh document. */
+  handleTryAgain = () => {
+    const err = this.state.error;
+    if (isStaleChunkOrModuleError(err)) {
+      window.location.reload();
+      return;
+    }
+    this.handleReset();
+  };
+
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
       }
+
+      const staleChunk = isStaleChunkOrModuleError(this.state.error);
 
       return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -61,20 +87,31 @@ export class ErrorBoundary extends Component<Props, State> {
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Something went wrong
+              {staleChunk ? 'App updated — reload needed' : 'Something went wrong'}
             </h2>
-            <p className="text-muted-foreground mb-6">
-              {this.state.error?.message || 'An unexpected error occurred'}
+            <p
+              className={`text-muted-foreground text-sm ${
+                staleChunk && this.state.error?.message ? 'mb-2' : 'mb-6'
+              }`}
+            >
+              {staleChunk
+                ? 'This tab is still using an old build. Reload to load the latest version.'
+                : this.state.error?.message || 'An unexpected error occurred'}
             </p>
+            {staleChunk && this.state.error?.message && (
+              <p className="text-xs text-gray-500 mb-6 break-all">{this.state.error.message}</p>
+            )}
             <div className="flex gap-3 justify-center">
               <button
-                onClick={this.handleReset}
+                onClick={this.handleTryAgain}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Try Again
+                {staleChunk ? 'Reload page' : 'Try Again'}
               </button>
               <button
-                onClick={() => window.location.href = '/'}
+                onClick={() => {
+                  window.location.href = '/';
+                }}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 Go Home
