@@ -16,10 +16,11 @@ export function useConversations(filters?: ConversationFilters) {
     queryKey: ['conversations', filters],
     queryFn: () => conversationService.getAll(filters),
     staleTime: 20_000,
-    // Polling is disabled — real-time updates are driven by WebSocket events in the conversations page.
+    // Real-time updates come via WebSocket. Disable all automatic refetch triggers.
     refetchInterval: false,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     // Keep the previous page visible while the next page or filter fetch runs (no full blank list).
     placeholderData: keepPreviousData,
   });
@@ -73,7 +74,9 @@ export function useConversationStats() {
   return useQuery({
     queryKey: ['conversations', 'stats'],
     queryFn: () => conversationService.getStats(),
-    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 5 * 60_000,        // treat as fresh for 5 minutes
+    refetchInterval: 5 * 60_000,  // poll at most once per 5 minutes
+    refetchOnWindowFocus: false,
   });
 }
 
