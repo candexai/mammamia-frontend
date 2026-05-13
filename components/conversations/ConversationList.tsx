@@ -208,7 +208,9 @@ export function ConversationList({
             <p className="text-sm font-bold text-foreground mb-2 tracking-tight">
               {appliedSearch
                 ? "No conversations match your search"
-                : `No conversations in the last ${dateRangeDays} day${dateRangeDays === 1 ? "" : "s"}`}
+                : dateRangeDays === 1
+                  ? "Nothing updated today — try Last 7 days or a wider range."
+                  : `No conversations in the last ${dateRangeDays} days`}
             </p>
             <p className="text-xs text-muted-foreground/70 mt-1 font-medium">
               {appliedSearch
@@ -225,7 +227,9 @@ export function ConversationList({
             {rangeStart}–{rangeEnd} of {pagination!.total}
             {!isSearchActive && (
               <span className="ml-1 text-muted-foreground/60">
-                (last {dateRangeDays}d)
+                {dateRangeDays === 1
+                  ? "(updated today)"
+                  : `(updated in last ${dateRangeDays}d)`}
               </span>
             )}
           </p>
