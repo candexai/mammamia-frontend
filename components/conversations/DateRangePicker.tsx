@@ -3,19 +3,19 @@
 import { useState, useRef, useEffect } from "react";
 import { Calendar, ChevronDown, X } from "lucide-react";
 
-export type DateRangePreset = 7 | 15 | 30 | "custom";
-
 interface DateRangePickerProps {
   value: number; // current days value (1-365)
   onChange: (days: number) => void;
 }
 
-const PRESETS: { label: string; days: DateRangePreset }[] = [
-  { label: "Last 7 days", days: 7 },
-  { label: "Last 15 days", days: 15 },
-  { label: "Last 30 days", days: 30 },
-  { label: "Custom", days: "custom" },
-];
+const PRESET_DAYS = [7, 15, 30] as const;
+type PresetDay = (typeof PRESET_DAYS)[number];
+
+const PRESET_LABELS: Record<PresetDay, string> = {
+  7: "Last 7 days",
+  15: "Last 15 days",
+  30: "Last 30 days",
+};
 
 const MAX_DAYS = 365;
 
@@ -36,13 +36,12 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const isPreset = PRESETS.some((p) => p.days === value && p.days !== "custom");
+  const isPreset = (PRESET_DAYS as readonly number[]).includes(value);
   const currentLabel = isPreset
-    ? PRESETS.find((p) => p.days === value)!.label
+    ? PRESET_LABELS[value as PresetDay]
     : `Last ${value} days`;
 
-  const handlePreset = (days: DateRangePreset) => {
-    if (days === "custom") return; // handled separately
+  const handlePreset = (days: PresetDay) => {
     onChange(days);
     setOpen(false);
     setCustomInput("");
@@ -82,18 +81,18 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
       {open && (
         <div className="absolute right-0 mt-2 w-52 rounded-xl border border-border/60 bg-card shadow-xl z-50 overflow-hidden">
           <div className="p-1">
-            {PRESETS.filter((p) => p.days !== "custom").map((p) => (
+            {PRESET_DAYS.map((days) => (
               <button
-                key={p.days as number}
+                key={days}
                 type="button"
-                onClick={() => handlePreset(p.days)}
+                onClick={() => handlePreset(days)}
                 className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                  value === p.days
+                  value === days
                     ? "bg-primary/10 text-primary font-semibold"
                     : "text-foreground hover:bg-accent/60"
                 }`}
               >
-                {p.label}
+                {PRESET_LABELS[days]}
               </button>
             ))}
           </div>
