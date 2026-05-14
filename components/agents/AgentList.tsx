@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Bot, Loader2, Trash2, Edit2, MessageSquare, Mic, Database, Wrench } from "lucide-react";
+import { Plus, Bot, Loader2, Trash2, Edit2, Eye, MessageSquare, Mic, Database, Wrench } from "lucide-react";
 import { useAgents, useDeleteAgent } from "@/hooks/useAgents";
 import { CreateAgentModal } from "./CreateAgentModal";
 import { EditAgentModal } from "./EditAgentModal";
+import { AgentConvaiPreviewModal } from "./AgentConvaiPreviewModal";
 import { Agent } from "@/services/agent.service";
 import { toast } from "sonner";
 
@@ -14,6 +15,7 @@ export function AgentList() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
+  const [previewAgent, setPreviewAgent] = useState<Agent | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (agent: Agent) => {
@@ -94,6 +96,15 @@ export function AgentList() {
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
+                    type="button"
+                    onClick={() => setPreviewAgent(agent)}
+                    className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                    title="Preview ConvAI widget (browser)"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => {
                       setEditingAgent(agent);
                       setIsEditModalOpen(true);
@@ -104,6 +115,7 @@ export function AgentList() {
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleDelete(agent)}
                     disabled={deletingId === agent._id}
                     className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
@@ -166,6 +178,14 @@ export function AgentList() {
           setEditingAgent(null);
         }}
         agent={editingAgent}
+      />
+      <AgentConvaiPreviewModal
+        open={!!previewAgent}
+        onClose={() => setPreviewAgent(null)}
+        agentId={previewAgent?.agent_id ?? null}
+        agentName={previewAgent?.name}
+        firstMessage={previewAgent?.first_message}
+        systemPrompt={previewAgent?.system_prompt}
       />
     </div>
   );

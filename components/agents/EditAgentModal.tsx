@@ -18,6 +18,10 @@ import {
   preloadVoicePreview,
   VoiceOption
 } from '@/utils/voiceUtils';
+import {
+  DEFAULT_BUILTIN_TOOL_DESCRIPTIONS,
+  DEFAULT_VOICEMAIL_LEAVE_MESSAGE
+} from '@/utils/agentBuiltinToolDefaults';
 
 interface EditAgentModalProps {
   isOpen: boolean;
@@ -43,6 +47,16 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
   const [endCallEnabled, setEndCallEnabled] = useState(true);
   const [languageDetectionEnabled, setLanguageDetectionEnabled] = useState(false);
   const [voicemailDetectionEnabled, setVoicemailDetectionEnabled] = useState(false);
+  const [endCallToolDescription, setEndCallToolDescription] = useState<string>(
+    DEFAULT_BUILTIN_TOOL_DESCRIPTIONS.end_call
+  );
+  const [languageDetectionToolDescription, setLanguageDetectionToolDescription] = useState<string>(
+    DEFAULT_BUILTIN_TOOL_DESCRIPTIONS.language_detection
+  );
+  const [voicemailDetectionToolDescription, setVoicemailDetectionToolDescription] = useState<string>(
+    DEFAULT_BUILTIN_TOOL_DESCRIPTIONS.voicemail_detection
+  );
+  const [voicemailLeaveMessage, setVoicemailLeaveMessage] = useState<string>(DEFAULT_VOICEMAIL_LEAVE_MESSAGE);
 
   // Human transfer state
   const [enableHumanTransfer, setEnableHumanTransfer] = useState(false);
@@ -87,6 +101,22 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
       setEndCallEnabled(agent.built_in_tools?.end_call !== false);
       setLanguageDetectionEnabled(agent.built_in_tools?.language_detection ?? false);
       setVoicemailDetectionEnabled(agent.built_in_tools?.voicemail_detection ?? false);
+
+      const d = agent.built_in_tool_details;
+      setEndCallToolDescription(
+        d?.end_call?.description?.trim() || DEFAULT_BUILTIN_TOOL_DESCRIPTIONS.end_call
+      );
+      setLanguageDetectionToolDescription(
+        d?.language_detection?.description?.trim() ||
+          DEFAULT_BUILTIN_TOOL_DESCRIPTIONS.language_detection
+      );
+      setVoicemailDetectionToolDescription(
+        d?.voicemail_detection?.description?.trim() ||
+          DEFAULT_BUILTIN_TOOL_DESCRIPTIONS.voicemail_detection
+      );
+      setVoicemailLeaveMessage(
+        d?.voicemail_detection?.voicemail_message?.trim() || DEFAULT_VOICEMAIL_LEAVE_MESSAGE
+      );
 
       // Human transfer
       setEnableHumanTransfer(agent.enable_human_transfer ?? false);
@@ -270,6 +300,14 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
             end_call: endCallEnabled,
             language_detection: languageDetectionEnabled,
             voicemail_detection: voicemailDetectionEnabled,
+          },
+          built_in_tool_details: {
+            end_call: { description: endCallToolDescription.trim() },
+            language_detection: { description: languageDetectionToolDescription.trim() },
+            voicemail_detection: {
+              description: voicemailDetectionToolDescription.trim(),
+              voicemail_message: voicemailLeaveMessage.trim(),
+            },
           },
           enable_human_transfer: enableHumanTransfer,
           human_transfer_rules: enableHumanTransfer ? validTransferRules : [],
@@ -628,47 +666,172 @@ export function EditAgentModal({ isOpen, onClose, agent }: EditAgentModalProps) 
 
           {/* Built-in Tools */}
           <div className="border-t border-border pt-4">
-            <label className="block text-sm font-medium text-foreground mb-3">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Built-in Tools
             </label>
-            <div className="space-y-3">
-              {[
-                { label: 'End Call', description: 'Allow the agent to hang up the call', value: endCallEnabled, setter: setEndCallEnabled },
-                { label: 'Language Detection', description: 'Automatically detect and adapt to caller language', value: languageDetectionEnabled, setter: setLanguageDetectionEnabled },
-                { label: 'Voicemail Detection', description: 'Detect when the call reaches voicemail', value: voicemailDetectionEnabled, setter: setVoicemailDetectionEnabled },
-              ].map(({ label, description, value, setter }) => (
-                <label key={label} className="flex items-start gap-3 cursor-pointer group">
+            <p className="text-xs text-muted-foreground mb-4">
+              Toggle each tool, then edit the tool description the voice model sees (and the voicemail script when
+              applicable).
+            </p>
+            <div className="space-y-6">
+              {/* End call */}
+              <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer group">
                   <div className="relative mt-0.5 shrink-0">
                     <input
                       type="checkbox"
-                      checked={value}
-                      onChange={(e) => setter(e.target.checked)}
+                      checked={endCallEnabled}
+                      onChange={(e) => setEndCallEnabled(e.target.checked)}
                       disabled={updateAgentPrompt.isPending}
                       className="peer sr-only"
                     />
-                    {/* Visual only — toggling is handled by the label + checkbox above (do not add onClick here or it double-toggles with the label) */}
                     <span
                       aria-hidden
                       className={cn(
                         'relative flex h-6 w-10 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background',
-                        value ? 'bg-primary' : 'bg-secondary border border-border',
+                        endCallEnabled ? 'bg-primary' : 'bg-secondary border border-border',
                         updateAgentPrompt.isPending && 'pointer-events-none opacity-50'
                       )}
                     >
                       <span
                         className={cn(
                           'pointer-events-none absolute top-1 left-1 block h-4 w-4 rounded-full bg-white shadow transition-transform',
-                          value ? 'translate-x-4' : 'translate-x-0'
+                          endCallEnabled ? 'translate-x-4' : 'translate-x-0'
                         )}
                       />
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">{label}</p>
-                    <p className="text-xs text-muted-foreground">{description}</p>
+                    <p className="text-sm font-medium text-foreground">End call</p>
+                    <p className="text-xs text-muted-foreground">Allow the agent to hang up the call</p>
                   </div>
                 </label>
-              ))}
+                <div>
+                  <label className="block text-xs font-medium text-foreground mb-1.5">
+                    Tool description
+                  </label>
+                  <textarea
+                    value={endCallToolDescription}
+                    onChange={(e) => setEndCallToolDescription(e.target.value)}
+                    disabled={updateAgentPrompt.isPending}
+                    rows={2}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y min-h-[2.5rem]"
+                    placeholder={DEFAULT_BUILTIN_TOOL_DESCRIPTIONS.end_call}
+                  />
+                </div>
+              </div>
+
+              {/* Language detection */}
+              <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative mt-0.5 shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={languageDetectionEnabled}
+                      onChange={(e) => setLanguageDetectionEnabled(e.target.checked)}
+                      disabled={updateAgentPrompt.isPending}
+                      className="peer sr-only"
+                    />
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'relative flex h-6 w-10 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background',
+                        languageDetectionEnabled ? 'bg-primary' : 'bg-secondary border border-border',
+                        updateAgentPrompt.isPending && 'pointer-events-none opacity-50'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'pointer-events-none absolute top-1 left-1 block h-4 w-4 rounded-full bg-white shadow transition-transform',
+                          languageDetectionEnabled ? 'translate-x-4' : 'translate-x-0'
+                        )}
+                      />
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">Language detection</p>
+                    <p className="text-xs text-muted-foreground">
+                      Automatically detect and adapt to caller language
+                    </p>
+                  </div>
+                </label>
+                <div>
+                  <label className="block text-xs font-medium text-foreground mb-1.5">
+                    Tool description
+                  </label>
+                  <textarea
+                    value={languageDetectionToolDescription}
+                    onChange={(e) => setLanguageDetectionToolDescription(e.target.value)}
+                    disabled={updateAgentPrompt.isPending}
+                    rows={2}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y min-h-[2.5rem]"
+                    placeholder={DEFAULT_BUILTIN_TOOL_DESCRIPTIONS.language_detection}
+                  />
+                </div>
+              </div>
+
+              {/* Voicemail detection */}
+              <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative mt-0.5 shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={voicemailDetectionEnabled}
+                      onChange={(e) => setVoicemailDetectionEnabled(e.target.checked)}
+                      disabled={updateAgentPrompt.isPending}
+                      className="peer sr-only"
+                    />
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'relative flex h-6 w-10 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background',
+                        voicemailDetectionEnabled ? 'bg-primary' : 'bg-secondary border border-border',
+                        updateAgentPrompt.isPending && 'pointer-events-none opacity-50'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'pointer-events-none absolute top-1 left-1 block h-4 w-4 rounded-full bg-white shadow transition-transform',
+                          voicemailDetectionEnabled ? 'translate-x-4' : 'translate-x-0'
+                        )}
+                      />
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">Voicemail detection</p>
+                    <p className="text-xs text-muted-foreground">Detect when the call reaches voicemail</p>
+                  </div>
+                </label>
+                <div>
+                  <label className="block text-xs font-medium text-foreground mb-1.5">
+                    Tool description
+                  </label>
+                  <textarea
+                    value={voicemailDetectionToolDescription}
+                    onChange={(e) => setVoicemailDetectionToolDescription(e.target.value)}
+                    disabled={updateAgentPrompt.isPending}
+                    rows={2}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y min-h-[2.5rem]"
+                    placeholder={DEFAULT_BUILTIN_TOOL_DESCRIPTIONS.voicemail_detection}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-foreground mb-1.5">
+                    Voicemail message
+                  </label>
+                  <p className="text-xs text-muted-foreground mb-1.5">
+                    Spoken when leaving a message on voicemail (voicemail detection only).
+                  </p>
+                  <textarea
+                    value={voicemailLeaveMessage}
+                    onChange={(e) => setVoicemailLeaveMessage(e.target.value)}
+                    disabled={updateAgentPrompt.isPending}
+                    rows={3}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y min-h-[3.5rem]"
+                    placeholder={DEFAULT_VOICEMAIL_LEAVE_MESSAGE}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 

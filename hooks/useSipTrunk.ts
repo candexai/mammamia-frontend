@@ -7,6 +7,10 @@ export interface OutboundCallRequest {
   agent_phone_number_id: string;
   to_number: string;
   customer_info?: { name?: string; email?: string; [key: string]: any };
+  /** Merged with customer_info server-side; explicit keys override customer_info when both are sent. */
+  dynamic_variables?: Record<string, string | number | boolean | null | undefined>;
+  /** When true, sender_email is not auto-fetched from Gmail and any body sender_email is ignored. */
+  omit_sender_email?: boolean;
   sender_email?: string;
   provider?: 'sip' | 'twilio'; // Optional provider parameter
 }

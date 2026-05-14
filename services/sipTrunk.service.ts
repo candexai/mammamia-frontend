@@ -8,6 +8,8 @@ export interface OutboundCallRequest {
     email?: string;
     name?: string;
   };
+  dynamic_variables?: Record<string, string | number | boolean | null | undefined>;
+  omit_sender_email?: boolean;
   sender_email?: string;
 }
 

@@ -6,6 +6,27 @@ export interface HumanTransferRule {
   transfer_type: string;
 }
 
+/** Matches Python / ElevenLabs agent prompt PATCH for built-in tools */
+export interface BuiltInToolPromptPayload {
+  description?: string;
+  name: string;
+  params: Record<string, unknown>;
+}
+
+export type BuiltInToolInput = boolean | BuiltInToolPromptPayload;
+
+export interface BuiltInToolsInput {
+  end_call?: BuiltInToolInput;
+  language_detection?: BuiltInToolInput;
+  voicemail_detection?: BuiltInToolInput;
+}
+
+export interface BuiltInToolDetails {
+  end_call?: { description?: string };
+  language_detection?: { description?: string };
+  voicemail_detection?: { description?: string; voicemail_message?: string };
+}
+
 export interface Agent {
   _id: string;
   agent_id: string;
@@ -18,7 +39,13 @@ export interface Agent {
   escalationRules?: string[];
   knowledge_base_ids: string[];
   tool_ids: string[];
-  built_in_tools?: { end_call?: boolean; language_detection?: boolean; voicemail_detection?: boolean };
+  /** Stored on our API as boolean flags; PATCH body may use full specs via UpdateAgentPromptData */
+  built_in_tools?: {
+    end_call?: boolean;
+    language_detection?: boolean;
+    voicemail_detection?: boolean;
+  };
+  built_in_tool_details?: BuiltInToolDetails;
   enable_human_transfer?: boolean;
   human_transfer_rules?: HumanTransferRule[];
   userId: string;
@@ -46,7 +73,8 @@ export interface UpdateAgentPromptData {
   voice_id?: string;
   escalationRules?: string[];
   knowledge_base_ids: string[];
-  built_in_tools?: { end_call?: boolean; language_detection?: boolean; voicemail_detection?: boolean };
+  built_in_tools?: BuiltInToolsInput;
+  built_in_tool_details?: BuiltInToolDetails;
   enable_human_transfer?: boolean;
   human_transfer_rules?: HumanTransferRule[];
   // tool_ids are automatically added from backend env variables (PRODUCTS_TOOL_ID and ORDERS_TOOL_ID)

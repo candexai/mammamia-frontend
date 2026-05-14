@@ -10,6 +10,7 @@ import { useOutboundCall } from "@/hooks/useSipTrunk";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
+import { collectAgentPreviewDynamicVariableKeys, extractAgentTemplateVariables } from "@/utils/agentDynamicVariables";
 
 interface BatchCallBuilderProps {
   onClose: () => void;
@@ -400,39 +401,12 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
     }
   };
 
-  // Helper function to extract variables from text (e.g., {{name}}, {{email}})
-  const extractVariables = (text: string): string[] => {
-    if (!text) return [];
-    const variablePattern = /\{\{(\w+)\}\}/g;
-    const variables: string[] = [];
-    let match;
-    while ((match = variablePattern.exec(text)) !== null) {
-      const varName = match[1].toLowerCase(); // Normalize to lowercase
-      if (!variables.includes(varName)) {
-        variables.push(varName);
-      }
-    }
-    return variables;
-  };
-
-  // Helper function to extract variables from greeting message (e.g., {{name}}, {{email}})
-  // Kept for backward compatibility
-  const extractVariablesFromGreeting = (greetingMessage: string): string[] => {
-    return extractVariables(greetingMessage);
-  };
-
   // Extract all required variables from selected agent
   const getRequiredVariables = (): string[] => {
     if (!selectedAgentId) return [];
     const selectedAgent = agents.find(agent => agent._id === selectedAgentId);
     if (!selectedAgent) return [];
-    
-    const firstMessageVars = extractVariables(selectedAgent.first_message || '');
-    const systemPromptVars = extractVariables(selectedAgent.system_prompt || '');
-    
-    // Combine and deduplicate
-    const allVars = [...firstMessageVars, ...systemPromptVars];
-    return Array.from(new Set(allVars)).sort();
+    return collectAgentPreviewDynamicVariableKeys(selectedAgent.first_message, selectedAgent.system_prompt);
   };
 
   // Helper function to map CSV/XLS columns to dynamic_variables
@@ -583,7 +557,7 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
     try {
       // Extract variables from agent's first_message
       const firstMessage = selectedAgent.first_message || '';
-      const greetingVariables = extractVariablesFromGreeting(firstMessage);
+      const greetingVariables = extractAgentTemplateVariables(firstMessage);
 
       console.log('[BatchCallBuilder] Agent first message:', firstMessage);
       console.log('[BatchCallBuilder] Extracted variables from first message:', greetingVariables);

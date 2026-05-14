@@ -7,7 +7,6 @@ import { useKnowledgeBase } from "@/contexts/KnowledgeBaseContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAIBehavior } from "@/hooks/useAIBehavior";
 import { usePhoneNumbersList } from "@/hooks/usePhoneNumber";
-import { useSocialIntegrationsStatus } from "@/hooks/useSocialIntegrationsStatus";
 import { useAgents } from "@/hooks/useAgents";
 import { useOutboundCall } from "@/hooks/useSipTrunk";
 import { toast } from "sonner";
@@ -28,7 +27,6 @@ export function VoiceAgentAnswering() {
   const { data: phoneNumbers } = usePhoneNumbersList();
   // Show all numbers that support outbound (Twilio + SIP). If SIP number isn't registered with the provider, backend will return a clear error when placing the call.
   const outboundPhoneNumbers = phoneNumbers?.filter(phone => phone.supports_outbound === true) || [];
-  const { integrations } = useSocialIntegrationsStatus();
   const { data: agents = [], isLoading: isLoadingAgents } = useAgents();
   const outboundCallMutation = useOutboundCall();
 
@@ -126,6 +124,11 @@ export function VoiceAgentAnswering() {
       return;
     }
 
+    if (!customerEmail.trim()) {
+      toast.error('Please enter customer email');
+      return;
+    }
+
     if (!selectedAgentId) {
       toast.error('Please select an agent');
       return;
@@ -150,37 +153,14 @@ export function VoiceAgentAnswering() {
       return;
     }
 
-    // Get sender email from connected Gmail social integration
-    let senderEmail = '';
-
-    // First check Gmail integration
-    if (integrations.gmail?.status === 'connected') {
-      // Check credentials.email first
-      if (integrations.gmail.credentials?.email) {
-        senderEmail = integrations.gmail.credentials.email;
-      }
-      // If not in credentials, check metadata
-      if (!senderEmail && integrations.gmail.metadata && 'email' in integrations.gmail.metadata) {
-        senderEmail = (integrations.gmail.metadata as any).email;
-      }
-    }
-
-    // Fallback: try any connected integration with email
-    if (!senderEmail) {
-      const connectedIntegration = Object.values(integrations).find(
-        (integration) => integration?.status === 'connected' && integration?.credentials?.email
-      );
-      if (connectedIntegration?.credentials?.email) {
-        senderEmail = connectedIntegration.credentials.email;
-      }
-    }
-
-    // Log for debugging
-    if (senderEmail) {
-      console.log('[Outbound Call] Using sender email:', senderEmail);
-    } else {
-      console.warn('[Outbound Call] No sender email found from social integrations');
-    }
+    const nameTrim = customerName.trim();
+    const emailTrim = customerEmail.trim();
+    const customer_info = { name: nameTrim, email: emailTrim };
+    const dynamic_variables = {
+      name: nameTrim,
+      customer_name: nameTrim,
+      email: emailTrim
+    };
 
     setIsTesting(true);
     try {
@@ -189,13 +169,11 @@ export function VoiceAgentAnswering() {
       const result = await outboundCallMutation.mutateAsync({
         agent_id: agentId,
         agent_phone_number_id: selectedPhoneNumberId,
-        to_number: testPhoneNumber,
-        customer_info: {
-          name: customerName,
-          ...(customerEmail.trim() && { email: customerEmail })
-        },
-        provider: callerProvider, // Pass the selected provider
-        ...(senderEmail && { sender_email: senderEmail })
+        to_number: testPhoneNumber.trim(),
+        customer_info,
+        dynamic_variables,
+        omit_sender_email: true,
+        provider: callerProvider
       });
 
       console.log('Outbound call response:', result);
@@ -368,7 +346,7 @@ export function VoiceAgentAnswering() {
                 />
               </div>
 
-              {/* Customer Email (Optional) */}
+              {/* Customer Email */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Customer Email <span className="text-red-500">*</span>
@@ -401,7 +379,7 @@ export function VoiceAgentAnswering() {
               </button>
               <button
                 onClick={handleTestVoiceAgent}
-                disabled={isTesting || !selectedAgentId || !selectedPhoneNumberId || !testPhoneNumber.trim() || !customerName.trim()}
+                disabled={isTesting || !selectedAgentId || !selectedPhoneNumberId || !testPhoneNumber.trim() || !customerName.trim() || !customerEmail.trim()}
                 className="px-6 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
               >
                 {isTesting ? 'Calling...' : 'Start Test Call'}
