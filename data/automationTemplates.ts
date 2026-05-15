@@ -114,15 +114,7 @@ export const automationTemplates: AutomationTemplate[] = [
         config: {
           spreadsheetId: "",
           range: "Sheet1!A1",
-          values: [
-            "{{contact.name}}",
-            "{{contact.email}}",
-            "{{contact.phone}}",
-            "{{appointment.date}}",
-            "{{appointment.time}}",
-            "Booked",
-            "{{now}}"
-          ],
+          useFixedFormat: true,
         },
         position: 4,
       },
