@@ -430,6 +430,28 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
   };
 
 
+  const handleRenameAutomation = async (automationId: string, name: string) => {
+    try {
+      await apiClient.patch(`/automations/${automationId}`, { name });
+
+      const updatedAutomations = automations.map((a) =>
+        a.id === automationId ? { ...a, name } : a
+      );
+      updateAutomations(updatedAutomations);
+      void queryClient.invalidateQueries({ queryKey: AUTOMATIONS_QUERY_KEY });
+      toast.success("Automation renamed");
+    } catch (error: any) {
+      console.error("Rename error:", error);
+      const errorMessage =
+        error.response?.data?.error?.message ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to rename automation";
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
   const handleDeleteAutomation = async () => {
     if (!selectedAutomation || !selectedAutomationId) return;
 
@@ -507,6 +529,7 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
         selectedId={selectedAutomationId}
         onSelect={setSelectedAutomationId}
         onNew={handleNewAutomation}
+        onRename={handleRenameAutomation}
       />
 
       <div className="flex-1 flex flex-col bg-background">

@@ -1,13 +1,14 @@
-import { Search, Plus, Zap } from "lucide-react";
+import { Search, Plus, Zap, Pencil, Check, X } from "lucide-react";
 import { Automation, nodeServices } from "@/data/mockAutomations";
 import { cn } from "@/lib/utils";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 interface AutomationListProps {
   automations: Automation[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onNew: () => void;
+  onRename?: (id: string, name: string) => void | Promise<void>;
 }
 
 function automationServiceLabel(serviceId: string) {
@@ -30,8 +31,51 @@ export function AutomationList({
   selectedId,
   onSelect,
   onNew,
+  onRename,
 }: AutomationListProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  const startEditing = (automation: Automation, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onRename) return;
+    setEditingId(automation.id);
+    setDraftName(automation.name);
+    requestAnimationFrame(() => editInputRef.current?.select());
+  };
+
+  const cancelEditing = (e?: React.SyntheticEvent) => {
+    e?.stopPropagation();
+    setEditingId(null);
+    setDraftName("");
+  };
+
+  const commitRename = async (automation: Automation, e?: React.SyntheticEvent) => {
+    e?.stopPropagation();
+    if (!onRename || editingId !== automation.id) return;
+
+    const trimmed = draftName.trim();
+    if (!trimmed) {
+      cancelEditing();
+      return;
+    }
+    if (trimmed === automation.name) {
+      cancelEditing();
+      return;
+    }
+
+    setRenamingId(automation.id);
+    try {
+      await onRename(automation.id, trimmed);
+      setEditingId(null);
+      setDraftName("");
+    } finally {
+      setRenamingId(null);
+    }
+  };
 
   const filteredAutomations = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -78,13 +122,23 @@ export function AutomationList({
         {filteredAutomations.map((automation) => {
           const isSelected = selectedId === automation.id;
           const isEnabled = automation.status === "enabled";
-          
+          const isEditing = editingId === automation.id;
+          const isRenaming = renamingId === automation.id;
+
           return (
-            <button
+            <div
               key={automation.id}
-              onClick={() => onSelect(automation.id)}
+              role="button"
+              tabIndex={0}
+              onClick={() => !isEditing && onSelect(automation.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (!isEditing) onSelect(automation.id);
+                }
+              }}
               className={cn(
-                "w-full text-left p-4 rounded-xl border transition-all duration-200 group",
+                "w-full text-left p-4 rounded-xl border transition-all duration-200 group cursor-pointer",
                 isSelected
                   ? "bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-primary/50 shadow-lg shadow-primary/10"
                   : "bg-card border-border hover:border-primary/30 hover:bg-accent/50 hover:shadow-md"
@@ -92,12 +146,75 @@ export function AutomationList({
             >
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex-1 min-w-0">
-                  <h3 className={cn(
-                    "font-semibold text-sm mb-1 truncate",
-                    isSelected ? "text-primary" : "text-foreground"
-                  )}>
-                    {automation.name}
-                  </h3>
+                  {isEditing ? (
+                    <div
+                      className="flex items-center gap-1 mb-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        ref={editInputRef}
+                        type="text"
+                        value={draftName}
+                        disabled={isRenaming}
+                        onChange={(e) => setDraftName(e.target.value)}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") void commitRename(automation, e);
+                          if (e.key === "Escape") cancelEditing(e);
+                        }}
+                        onBlur={() => void commitRename(automation)}
+                        className="flex-1 min-w-0 h-8 px-2 text-sm font-semibold rounded-lg bg-background border border-primary/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        aria-label="Automation name"
+                      />
+                      <button
+                        type="button"
+                        disabled={isRenaming}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={(e) => void commitRename(automation, e)}
+                        className="shrink-0 p-1.5 rounded-lg text-green-600 hover:bg-green-500/10 transition-colors"
+                        title="Save name"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isRenaming}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={cancelEditing}
+                        className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:bg-accent transition-colors"
+                        title="Cancel"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 mb-1 min-w-0">
+                      <h3
+                        className={cn(
+                          "font-semibold text-sm truncate flex-1 min-w-0",
+                          isSelected ? "text-primary" : "text-foreground"
+                        )}
+                        onDoubleClick={(e) => startEditing(automation, e)}
+                        title={automation.name}
+                      >
+                        {automation.name}
+                      </h3>
+                      {onRename && (
+                        <button
+                          type="button"
+                          onClick={(e) => startEditing(automation, e)}
+                          className={cn(
+                            "shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-all",
+                            isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                          )}
+                          title="Rename automation"
+                          aria-label="Rename automation"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <p className={cn(
                     "text-xs truncate",
                     isSelected ? "text-primary/70" : "text-muted-foreground"
@@ -127,7 +244,7 @@ export function AutomationList({
                   </span>
                 )}
               </div>
-            </button>
+            </div>
           );
         })}
 
