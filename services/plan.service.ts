@@ -34,6 +34,8 @@ export interface CreatePlanInput {
     users: number;
     customFeatures?: string[];
   };
+  isActive?: boolean;
+  isDefault?: boolean;
   displayOrder?: number;
 }
 
@@ -41,8 +43,9 @@ class PlanService {
   /**
    * Get all plans
    */
-  async getAllPlans(): Promise<Plan[]> {
-    const response = await apiClient.get<{ data: Plan[] }>('/plans');
+  async getAllPlans(options?: { includeInactive?: boolean }): Promise<Plan[]> {
+    const query = options?.includeInactive ? '?includeInactive=true' : '';
+    const response = await apiClient.get<{ data: Plan[] }>(`/plans${query}`);
     return response.data;
   }
 

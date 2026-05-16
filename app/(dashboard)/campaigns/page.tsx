@@ -14,9 +14,11 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { LoadingLogo } from "@/components/LoadingLogo";
+import { useTranslate } from "@/components/ui/TranslatedText";
 
 export default function CampaignsPage() {
   const { getSidebarWidth } = useSidebar();
+  const { t } = useTranslate();
   const [showBuilder, setShowBuilder] = useState(false);
   const [showBatchCallBuilder, setShowBatchCallBuilder] = useState(true);
   const [showBatchCallList, setShowBatchCallList] = useState(false);
@@ -71,10 +73,10 @@ export default function CampaignsPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                Campaigns
+                {t("Campaigns")}
                 <Activity className="w-5 h-5 text-primary" />
               </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Create and manage marketing campaigns</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{t("Create and manage marketing campaigns")}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -86,7 +88,7 @@ export default function CampaignsPage() {
               className="px-6 py-3 bg-secondary text-secondary-foreground rounded-xl text-sm font-bold hover:bg-secondary/80 transition-all duration-200 flex items-center gap-2 cursor-pointer"
             >
               <Activity className="w-4 h-4" />
-              <span>View Batch Calls</span>
+              <span>{t("View Batch Calls")}</span>
             </button>
             <LanguageSwitcher />
             <ThemeToggle />
@@ -117,10 +119,10 @@ export default function CampaignsPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                Campaigns
+                {t("Campaigns")}
                 <Activity className="w-5 h-5 text-primary" />
               </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Create and manage marketing campaigns</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{t("Create and manage marketing campaigns")}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -134,9 +136,9 @@ export default function CampaignsPage() {
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-lg text-foreground font-medium">Sending campaign...</p>
+                <p className="text-lg text-foreground font-medium">{t("Sending campaign...")}</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  This may take a few minutes depending on the number of contacts
+                  {t("This may take a few minutes depending on the number of contacts")}
                 </p>
               </div>
             </div>
@@ -166,10 +168,10 @@ export default function CampaignsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
-              Campaigns
+              {t("Campaigns")}
               <Activity className="w-5 h-5 text-primary/80" />
             </h1>
-            <p className="text-sm text-muted-foreground/80 mt-1 font-medium">Create and manage marketing campaigns across all channels</p>
+            <p className="text-sm text-muted-foreground/80 mt-1 font-medium">{t("Create and manage marketing campaigns across all channels")}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -181,7 +183,7 @@ export default function CampaignsPage() {
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl text-sm font-bold hover:from-blue-700 hover:to-blue-600 hover:shadow-xl hover:shadow-blue-600/30 transition-all duration-200 flex items-center gap-2 cursor-pointer shadow-lg shadow-blue-600/20"
           >
             <Plus className="w-4 h-4" />
-            <span>Batch Call</span>
+            <span>{t("Batch Call")}</span>
           </button>
           <button
             onClick={() => setShowBatchCallList(true)}
@@ -211,7 +213,7 @@ export default function CampaignsPage() {
         ) : isLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <LoadingLogo size="md" text="Loading campaigns..." />
+              <LoadingLogo size="md" text={t("Loading campaigns...")} />
             </div>
           </div>
         ) : campaigns.length === 0 ? (
@@ -232,10 +234,10 @@ export default function CampaignsPage() {
               </svg>
             </div>
             <h3 className="text-xl font-bold text-foreground mb-2 tracking-tight">
-              No campaigns yet
+              {t("No campaigns yet")}
             </h3>
             <p className="text-sm text-muted-foreground/80 mb-8 font-medium">
-              Use batch calls to reach your contacts
+              {t("Use batch calls to reach your contacts")}
             </p>
           </div>
         ) : (

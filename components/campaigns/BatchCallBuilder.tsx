@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
 import { collectAgentPreviewDynamicVariableKeys, extractAgentTemplateVariables } from "@/utils/agentDynamicVariables";
+import { useTranslate } from "@/components/ui/TranslatedText";
 
 interface BatchCallBuilderProps {
   onClose: () => void;
@@ -28,6 +29,7 @@ interface Recipient {
 const MAX_BATCH_RECIPIENTS = 10000;
 
 export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) {
+  const { t } = useTranslate();
   const { data: phoneNumbers } = usePhoneNumbersList();
   const outboundPhoneNumbers = phoneNumbers?.filter(phone => phone.supports_outbound === true) || [];
   const { data: agents = [], isLoading: isLoadingAgents } = useAgents();
@@ -631,13 +633,13 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
           <div className="bg-card border border-border rounded-xl p-6 space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-foreground">Create a batch call</h2>
+              <h2 className="text-2xl font-bold text-foreground">{t("Create a batch call")}</h2>
             </div>
 
             {/* Batch Name */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                Batch name <span className="text-red-500">*</span>
+                {t("Batch name")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -651,15 +653,15 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
             {/* Phone Number Selection - Single Select Only */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                Source Phone Number <span className="text-red-500">*</span>
-                <span className="text-xs text-muted-foreground ml-2">(Select one number for all calls)</span>
+                {t("Source Phone Number")} <span className="text-red-500">*</span>
+                <span className="text-xs text-muted-foreground ml-2">{t("(Select one number for all calls)")}</span>
               </label>
               <select
                 value={selectedPhoneNumberId}
                 onChange={(e) => setSelectedPhoneNumberId(e.target.value)}
                 className="w-full bg-secondary border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
               >
-                <option value="">Select a phone number</option>
+                <option value="">{t("Select a phone number")}</option>
                 {outboundPhoneNumbers.map((phone) => (
                   <option key={phone.id} value={phone.id}>
                     {phone.label} ({phone.phone_number})
@@ -668,7 +670,7 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
               </select>
               {outboundPhoneNumbers.length === 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  No phone numbers with outbound support available. Please import a phone number with outbound capabilities first.
+                  {t("No phone numbers with outbound support available. Please import a phone number with outbound capabilities first.")}
                 </p>
               )}
             </div>
@@ -676,7 +678,7 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
             {/* Agent Selection */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                Select Agent <span className="text-red-500">*</span>
+                {t("Select Agent")} <span className="text-red-500">*</span>
               </label>
               <select
                 value={selectedAgentId}
@@ -684,7 +686,7 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
                 disabled={isLoadingAgents}
                 className="w-full bg-secondary border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="">Select an agent</option>
+                <option value="">{t("Select an agent")}</option>
                 {agents.map((agent) => (
                   <option key={agent._id} value={agent._id}>
                     {agent.name} ({agent.agent_id})
@@ -693,7 +695,7 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
               </select>
               {!isLoadingAgents && agents.length === 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  No agents available. Please create an agent first.
+                  {t("No agents available. Please create an agent first.")}
                 </p>
               )}
               
@@ -712,10 +714,10 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
                       </div>
                       <div className="flex-1">
                         <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-1">
-                          Required CSV/XLS Columns
+                          {t("Required CSV/XLS Columns")}
                         </h4>
                         <p className="text-xs text-blue-600/80 dark:text-blue-400/80 mb-2">
-                          Your CSV/XLS file must include these column names (exact match, case-insensitive) to populate the dynamic variables used in this agent's first message and system prompt:
+                          {t("Your CSV/XLS file must include these column names (exact match, case-insensitive) to populate the dynamic variables used in this agent's first message and system prompt:")}
                         </p>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {requiredVars.map((varName) => (
@@ -740,7 +742,7 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Start time
+                  {t("Start time")}
                 </label>
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-sm text-foreground">
@@ -750,7 +752,7 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
                       checked={scheduleType === "now"}
                       onChange={() => setScheduleType("now")}
                     />
-                    Start now
+                    {t("Start now")}
                   </label>
                   <label className="flex items-center gap-2 text-sm text-foreground">
                     <input
@@ -759,7 +761,7 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
                       checked={scheduleType === "scheduled"}
                       onChange={() => setScheduleType("scheduled")}
                     />
-                    Schedule date and time
+                    {t("Schedule date and time")}
                   </label>
                   {scheduleType === "scheduled" && (
                     <input
@@ -773,18 +775,18 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Target concurrency limit
+                  {t("Target concurrency limit")}
                 </label>
                 <input
                   type="number"
                   min={1}
                   value={targetConcurrencyLimit}
                   onChange={(e) => setTargetConcurrencyLimit(e.target.value)}
-                  placeholder="Optional (e.g. 10)"
+                  placeholder={t("Optional (e.g. 10)")}
                   className="w-full bg-secondary border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Leave empty to use default concurrency from backend.
+                  {t("Leave empty to use default concurrency from backend.")}
                 </p>
               </div>
             </div>
@@ -792,7 +794,7 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
             {/* File Upload Section */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                Recipients <span className="text-red-500">*</span>
+                {t("Recipients")} <span className="text-red-500">*</span>
               </label>
               <p className="text-xs text-muted-foreground mb-3">
                 Please ensure your file follows the format shown below. Include headers for <strong>name</strong>, <strong>email</strong>, <strong>phone_number</strong>, <strong>customer_name</strong>, <strong>customer_email</strong>, and <strong>customer_phone_number</strong>.
@@ -816,10 +818,10 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
                 />
                 <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-foreground mb-1">
-                  Upload CSV or Excel file (.csv, .xls, or .xlsx)
+                  {t("Upload CSV or Excel file (.csv, .xls, or .xlsx)")}
                 </p>
                 <p className="text-xs text-muted-foreground mb-3">
-                  Maximum file size: 25.0 MB
+                  {t("Maximum file size: 25.0 MB")}
                 </p>
                 <button
                   type="button"
@@ -827,14 +829,14 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
                   disabled={isUploading}
                   className="mt-3 px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isUploading ? "Uploading..." : "Upload File"}
+                  {isUploading ? t("Uploading...") : t("Upload File")}
                 </button>
               </div>
 
               {recipients.length > 0 && (
                 <div className="mt-3 bg-secondary rounded-lg p-3">
                   <p className="text-sm text-foreground">
-                    {recipients.length} recipient{recipients.length !== 1 ? 's' : ''} loaded
+                    {recipients.length} {recipients.length !== 1 ? t("recipients") : t("recipient")} {t("loaded")}
                   </p>
                 </div>
               )}
@@ -1019,14 +1021,14 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
               onClick={onClose}
               className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-accent transition-colors"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               onClick={handleSubmitBatchCall}
               disabled={submitBatchCallMutation.isPending || !batchName.trim() || !selectedAgentId || !selectedPhoneNumberId || recipients.length === 0}
               className="px-6 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitBatchCallMutation.isPending ? "Submitting..." : "Submit a Batch Call"}
+              {submitBatchCallMutation.isPending ? t("Submitting...") : t("Submit a Batch Call")}
             </button>
           </div>
         </div>

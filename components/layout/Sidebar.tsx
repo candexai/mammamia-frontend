@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage, languageNames, Language } from "@/contexts/LanguageContext";
+import { useTranslate } from "@/components/ui/TranslatedText";
 
 interface NavItem {
   icon: React.ElementType;
@@ -35,9 +36,9 @@ interface SidebarProps {
 }
 
 const mainNavItems: NavItem[] = [
-  { icon: MessageSquare, label: "Conversations", href: "/conversations" },
   { icon: Brain, label: "AI", href: "/ai" },
   { icon: Zap, label: "Automations", href: "/automations" },
+  { icon: MessageSquare, label: "Conversations", href: "/conversations" },
   { icon: Users, label: "Contacts", href: "/contacts" },
   { icon: Megaphone, label: "Campaigns", href: "/campaigns" },
   { icon: FlaskConical, label: "Chatbot Test", href: "/chatbot-test" },
@@ -54,6 +55,7 @@ export function Sidebar({ onCollapseChange }: SidebarProps) {
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const pathname = usePathname();
   const { language, setLanguage } = useLanguage();
+  const { t } = useTranslate();
   const { user } = useAuth();
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
 
@@ -149,12 +151,12 @@ export function Sidebar({ onCollapseChange }: SidebarProps) {
                   ? "bg-gradient-to-r from-primary via-primary/95 to-primary/90 text-primary-foreground shadow-lg shadow-primary/20 ring-2 ring-primary/20"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/80 hover:shadow-md hover:scale-[1.02]"
               )}
-              title={isCollapsed ? item.label : undefined}
+              title={isCollapsed ? t(item.label) : undefined}
             >
               <Icon className="w-5 h-5 shrink-0 flex-shrink-0" />
               {!isCollapsed && (
                 <span className="text-sm font-semibold truncate min-w-0 flex-1 overflow-hidden text-ellipsis">
-                  {item.label}
+                  {t(item.label)}
                 </span>
               )}
               {active && !isCollapsed && (
@@ -182,7 +184,7 @@ export function Sidebar({ onCollapseChange }: SidebarProps) {
                   ? "bg-gradient-to-r from-primary via-primary/95 to-primary/90 text-primary-foreground shadow-lg shadow-primary/20 ring-2 ring-primary/20"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/80 hover:shadow-md hover:scale-[1.02]"
               )}
-              title={isCollapsed ? item.label : undefined}
+              title={isCollapsed ? t(item.label) : undefined}
             >
               {item.icon === User ? (
                 (() => {
@@ -222,7 +224,7 @@ export function Sidebar({ onCollapseChange }: SidebarProps) {
               )}
               {!isCollapsed && (
                 <span className="text-sm font-semibold truncate min-w-0 flex-1 overflow-hidden text-ellipsis">
-                  {item.label}
+                  {t(item.label)}
                 </span>
               )}
               {active && !isCollapsed && (

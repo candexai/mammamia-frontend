@@ -248,8 +248,11 @@ export default function ProfilePage() {
   const fetchPlans = async () => {
     try {
       const data = await planService.getAllPlans();
-      // Sort plans by price
-      setPlans(data.sort((a: Plan, b: Plan) => a.price - b.price));
+      setPlans(
+        data
+          .filter((p) => p.isActive !== false)
+          .sort((a: Plan, b: Plan) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.price - b.price)
+      );
     } catch (error) {
       console.error("Failed to fetch plans:", error);
       toast.error("Failed to load available plans");

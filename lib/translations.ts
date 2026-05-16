@@ -1,6 +1,8 @@
 // Simple in-memory translation dictionary
 // This provides fast, instant translations without API calls or DOM manipulation
 
+import { campaignTranslations } from "./campaignTranslations";
+
 export type Language = "en" | "es" | "it" | "tr" | "ar";
 
 export const translations: Record<Language, Record<string, string>> = {
@@ -84,6 +86,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "Notifications": "Notifiche",
     "Profile": "Profilo",
     "Collapse": "Comprimi",
+    "Configuration": "Configurazione",
+    ...campaignTranslations.it,
   },
   
   tr: {
@@ -170,6 +174,6 @@ export const translations: Record<Language, Record<string, string>> = {
 // Helper function to get translation
 export function getTranslation(key: string, language: Language): string {
   if (language === "en") return key;
-  return translations[language][key] || key;
+  return translations[language]?.[key] || campaignTranslations[language]?.[key] || key;
 }
 

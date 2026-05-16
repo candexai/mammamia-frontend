@@ -25,13 +25,15 @@ export default function AdminPlansPage() {
       users: 1,
       customFeatures: []
     },
-    displayOrder: 0
+    displayOrder: 0,
+    isActive: true,
   });
+  const [newCustomFeature, setNewCustomFeature] = useState("");
 
   // Fetch plans
   const { data: plans, isLoading } = useQuery<Plan[]>({
     queryKey: ['plans'],
-    queryFn: () => planService.getAllPlans(),
+    queryFn: () => planService.getAllPlans({ includeInactive: true }),
   });
 
   // Create plan mutation
@@ -87,8 +89,10 @@ export default function AdminPlansPage() {
         users: 1,
         customFeatures: []
       },
-      displayOrder: 0
+      displayOrder: 0,
+      isActive: true,
     });
+    setNewCustomFeature("");
     setEditingPlan(null);
     setShowModal(false);
   };
@@ -105,9 +109,33 @@ export default function AdminPlansPage() {
         ...plan.features,
         customFeatures: plan.features.customFeatures || []
       },
-      displayOrder: plan.displayOrder
+      displayOrder: plan.displayOrder,
+      isActive: plan.isActive,
     });
+    setNewCustomFeature("");
     setShowModal(true);
+  };
+
+  const addCustomFeature = () => {
+    const feature = newCustomFeature.trim();
+    if (!feature) return;
+    setFormData({
+      ...formData,
+      features: {
+        ...formData.features,
+        customFeatures: [...(formData.features.customFeatures || []), feature],
+      },
+    });
+    setNewCustomFeature("");
+  };
+
+  const removeCustomFeature = (index: number) => {
+    const updated = [...(formData.features.customFeatures || [])];
+    updated.splice(index, 1);
+    setFormData({
+      ...formData,
+      features: { ...formData.features, customFeatures: updated },
+    });
   };
 
   const handleSubmit = () => {
@@ -179,7 +207,7 @@ export default function AdminPlansPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {plans.map((plan) => (
+          {[...plans].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)).map((plan) => (
             <div
               key={plan._id}
               className={cn(
@@ -339,6 +367,16 @@ export default function AdminPlansPage() {
                   />
                 </div>
 
+                <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isActive !== false}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    className="rounded border-border"
+                  />
+                  Active (visible to users in settings)
+                </label>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">Price (Monthly)</label>
@@ -420,6 +458,45 @@ export default function AdminPlansPage() {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Custom features */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">Custom Features</h3>
+                <p className="text-xs text-muted-foreground">Additional bullet points shown on plan cards in user settings</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newCustomFeature}
+                    onChange={(e) => setNewCustomFeature(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomFeature())}
+                    className="flex-1 px-4 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary"
+                    placeholder="e.g. Priority support"
+                  />
+                  <button
+                    type="button"
+                    onClick={addCustomFeature}
+                    className="px-4 py-2 text-sm font-medium bg-secondary hover:bg-secondary/80 rounded-lg"
+                  >
+                    Add
+                  </button>
+                </div>
+                {(formData.features.customFeatures || []).length > 0 && (
+                  <ul className="space-y-2">
+                    {formData.features.customFeatures!.map((feature, idx) => (
+                      <li key={idx} className="flex items-center justify-between gap-2 px-3 py-2 bg-secondary rounded-lg text-sm">
+                        <span>{feature}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeCustomFeature(idx)}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
 

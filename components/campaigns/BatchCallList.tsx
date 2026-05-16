@@ -6,6 +6,7 @@ import { useBatchCalls, useCancelBatchJob, useResumeBatchJob, useRetryBatchJob, 
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslate } from "@/components/ui/TranslatedText";
 
 interface BatchCall {
   _id?: string;
@@ -37,6 +38,7 @@ interface BatchCallListProps {
 }
 
 export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
+  const { t } = useTranslate();
   const { data: batchCalls = [], isLoading, isFetching, refetch } = useBatchCalls();
   const cancelBatchJob = useCancelBatchJob();
   const resumeBatchJob = useResumeBatchJob();
@@ -49,7 +51,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
   const handleCancel = async (jobId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (!confirm('Are you sure you want to cancel this batch job? This action cannot be undone.')) {
+    if (!confirm(t('Are you sure you want to cancel this batch job? This action cannot be undone.'))) {
       return;
     }
 
@@ -168,9 +170,9 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
 
     if (isFutureScheduled) {
       return {
-        label: "scheduled",
+        label: t("scheduled"),
         statusForColor: "scheduled",
-        scheduledNote: `Will start automatically at ${formatDate(batchCall.scheduled_time_unix)}`
+        scheduledNote: `${t("Will start automatically at")} ${formatDate(batchCall.scheduled_time_unix)}`
       };
     }
 
@@ -202,7 +204,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="w-6 h-6 text-primary animate-spin" />
-        <span className="ml-2 text-muted-foreground">Loading batch calls...</span>
+        <span className="ml-2 text-muted-foreground">{t("Loading batch calls...")}</span>
       </div>
     );
   }
@@ -210,7 +212,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">Batch Calls</h3>
+        <h3 className="text-lg font-semibold text-foreground">{t("Batch Calls")}</h3>
         <div className="flex items-center gap-2">
           {onCreateNew && (
             <button
@@ -219,7 +221,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
               className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-600 hover:shadow-lg hover:shadow-blue-600/30 transition-all flex items-center gap-2"
             >
               <Phone className="w-4 h-4" />
-              <span>Create Batch Call</span>
+              <span>{t("Create Batch Call")}</span>
             </button>
           )}
           <button
@@ -227,7 +229,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
             onClick={handleManualRefresh}
             disabled={isManualRefreshing || isFetching}
             className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
-            title="Refresh"
+            title={t("Refresh")}
           >
             <RefreshCw className={cn("w-4 h-4", (isManualRefreshing || isFetching) && "animate-spin")} />
           </button>
@@ -237,7 +239,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
       {batchCalls.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Phone className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>No batch calls found</p>
+          <p>{t("No batch calls found")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -269,23 +271,23 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
                       
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
                         <div>
-                          <span className="font-medium text-foreground">Agent:</span> {batchCall.agent_name}
+                          <span className="font-medium text-foreground">{t("Agent:")}</span> {batchCall.agent_name}
                         </div>
                         <div>
-                          <span className="font-medium text-foreground">Scheduled:</span> {batchCall.total_calls_scheduled}
+                          <span className="font-medium text-foreground">{t("Scheduled:")}</span> {batchCall.total_calls_scheduled}
                         </div>
                         <div>
-                          <span className="font-medium text-foreground">Dispatched:</span> {batchCall.total_calls_dispatched}
+                          <span className="font-medium text-foreground">{t("Dispatched:")}</span> {batchCall.total_calls_dispatched}
                         </div>
                         <div>
-                          <span className="font-medium text-foreground">Finished:</span> {batchCall.total_calls_finished}
+                          <span className="font-medium text-foreground">{t("Finished:")}</span> {batchCall.total_calls_finished}
                         </div>
                       </div>
 
                       <div className="mt-2 text-xs text-muted-foreground">
-                        <div>Created: {formatDate(batchCall.created_at_unix)}</div>
+                        <div>{t("Created:")} {formatDate(batchCall.created_at_unix)}</div>
                         {batchCall.scheduled_time_unix && (
-                          <div>Scheduled: {formatDate(batchCall.scheduled_time_unix)}</div>
+                          <div>{t("Scheduled:")} {formatDate(batchCall.scheduled_time_unix)}</div>
                         )}
                         {displayStatus.scheduledNote && (
                           <div className="text-blue-500 mt-1">{displayStatus.scheduledNote}</div>
@@ -300,7 +302,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
                           disabled={resumeBatchJob.isPending}
                           className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {resumeBatchJob.isPending ? 'Resuming...' : 'Resume'}
+                          {resumeBatchJob.isPending ? t('Resuming...') : t('Resume')}
                         </button>
                       )}
                       {canRetry(batchCall.status) && (
@@ -310,7 +312,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
                           className="px-3 py-1.5 text-xs font-medium text-orange-500 hover:text-orange-600 hover:bg-orange-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                         >
                           <RefreshCw className={cn("w-3 h-3", retryingJobId === batchCall.batch_call_id && "animate-spin")} />
-                          {retryingJobId === batchCall.batch_call_id ? 'Retrying...' : 'Retry Batch'}
+                          {retryingJobId === batchCall.batch_call_id ? t('Retrying...') : t('Retry Batch')}
                         </button>
                       )}
                       {canCancel(batchCall.status) && (
@@ -322,7 +324,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
                           disabled={cancelBatchJob.isPending}
                           className="px-3 py-1.5 text-xs font-medium text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {cancelBatchJob.isPending ? 'Pausing...' : 'Pause / Cancel'}
+                          {cancelBatchJob.isPending ? t('Pausing...') : t('Pause / Cancel')}
                         </button>
                       )}
                       {isExpanded ? (
@@ -352,6 +354,7 @@ interface BatchCallDetailsProps {
 }
 
 function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
+  const { t } = useTranslate();
   const { data: detailsData, isLoading: detailsLoading } = useBatchJobDetails(batchCall.batch_call_id);
   const [selectedContactKey, setSelectedContactKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "transcript" | "metadata">("overview");
@@ -428,28 +431,28 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
 
   const formatCallStatusLabel = (raw: string) => {
     const s = (raw || "").toLowerCase().trim().replace(/[\s-]+/g, "_");
-    if (!s) return "Pending";
+    if (!s) return t("Pending");
     const map: Record<string, string> = {
-      completed: "Completed",
-      finished: "Completed",
-      success: "Completed",
-      done: "Completed",
-      busy: "Line busy",
-      line_busy: "Line busy",
-      user_busy: "Line busy",
-      voicemail: "Voicemail",
-      voice_mail: "Voicemail",
-      no_answer: "No answer",
-      noanswer: "No answer",
-      unanswered: "No answer",
-      failed: "Failed",
-      error: "Failed",
-      pending: "Pending",
-      cancelled: "Cancelled",
-      canceled: "Cancelled",
-      ringing: "Ringing",
-      in_progress: "In progress",
-      active: "Active",
+      completed: t("Completed"),
+      finished: t("Completed"),
+      success: t("Completed"),
+      done: t("Completed"),
+      busy: t("Line busy"),
+      line_busy: t("Line busy"),
+      user_busy: t("Line busy"),
+      voicemail: t("Voicemail"),
+      voice_mail: t("Voicemail"),
+      no_answer: t("No answer"),
+      noanswer: t("No answer"),
+      unanswered: t("No answer"),
+      failed: t("Failed"),
+      error: t("Failed"),
+      pending: t("Pending"),
+      cancelled: t("Cancelled"),
+      canceled: t("Cancelled"),
+      ringing: t("Ringing"),
+      in_progress: t("In progress"),
+      active: t("Active"),
     };
     if (map[s]) return map[s];
     return (raw || "Unknown")
@@ -476,10 +479,10 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
       return contact.failed_reason;
     }
     const status = String(contact?.status || "").toLowerCase();
-    if (status === "busy") return "Line busy";
-    if (status === "voicemail") return "Reached voicemail";
-    if (status === "no_answer" || status === "no-answer") return "No answer";
-    if (status === "failed") return "Call failed before completion";
+    if (status === "busy") return t("Line busy");
+    if (status === "voicemail") return t("Reached voicemail");
+    if (status === "no_answer" || status === "no-answer") return t("No answer");
+    if (status === "failed") return t("Call failed before completion");
     return "";
   };
 
@@ -497,29 +500,29 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
     const reason = getDisplayFailureReason(contact);
     if (status === "failed") {
       return {
-        label: "Call Failed Reason",
-        text: reason || "Call failed before completion",
+        label: t("Call Failed Reason"),
+        text: reason || t("Call failed before completion"),
         classes: "border-red-300/40 bg-red-500/10 text-red-700",
       };
     }
     if (status === "busy" || status === "line_busy" || status === "user_busy") {
       return {
-        label: "Call Outcome",
-        text: reason || "Line busy — recipient was on another call",
+        label: t("Call Outcome"),
+        text: reason || t("Line busy — recipient was on another call"),
         classes: "border-amber-300/40 bg-amber-500/10 text-amber-700",
       };
     }
     if (status === "voicemail" || status === "voice_mail") {
       return {
-        label: "Call Outcome",
-        text: reason || "Call sent to voicemail",
+        label: t("Call Outcome"),
+        text: reason || t("Call sent to voicemail"),
         classes: "border-purple-300/40 bg-purple-500/10 text-purple-700",
       };
     }
     if (status === "no_answer" || status === "noanswer" || status === "unanswered") {
       return {
-        label: "Call Outcome",
-        text: reason || "Recipient did not answer",
+        label: t("Call Outcome"),
+        text: reason || t("Recipient did not answer"),
         classes: "border-orange-300/40 bg-orange-500/10 text-orange-700",
       };
     }
@@ -623,24 +626,24 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
         <div>
           <h5 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <Phone className="w-4 h-4" />
-            Batch Call Information
+            {t("Batch Call Information")}
           </h5>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <User className="w-4 h-4" />
-                <span className="font-medium">Agent:</span>
+                <span className="font-medium">{t("Agent:")}</span>
                 <span className="text-foreground">{batchCall.agent_name}</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Phone className="w-4 h-4" />
-                <span className="font-medium">Phone Provider:</span>
+                <span className="font-medium">{t("Phone Provider:")}</span>
                 <span className="text-foreground">{batchCall.phone_provider}</span>
               </div>
               {batchCall.sender_email && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Mail className="w-4 h-4" />
-                  <span className="font-medium">Sender Email:</span>
+                  <span className="font-medium">{t("Sender Email:")}</span>
                   <span className="text-foreground">{batchCall.sender_email}</span>
                 </div>
               )}
@@ -648,15 +651,15 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="w-4 h-4" />
-                <span className="font-medium">Call Name:</span>
+                <span className="font-medium">{t("Call Name:")}</span>
                 <span className="text-foreground">{batchCall.call_name}</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="font-medium">Recipients:</span>
+                <span className="font-medium">{t("Recipients")}:</span>
                 <span className="text-foreground">{batchCall.recipients_count}</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="font-medium">Retry Count:</span>
+                <span className="font-medium">{t("Retry Count:")}</span>
                 <span className="text-foreground">{batchCall.retry_count || 0}</span>
               </div>
             </div>
@@ -665,7 +668,7 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
 
         {/* Call Statistics */}
         <div>
-          <h5 className="text-sm font-semibold text-foreground mb-1">Call Statistics</h5>
+          <h5 className="text-sm font-semibold text-foreground mb-1">{t("Call Statistics")}</h5>
           <p className="text-xs text-muted-foreground mb-3">
             <span className="font-medium text-blue-500">Dispatched</span> = call sent to provider (ringing / connecting).&nbsp;
             <span className="font-medium text-green-500">Finished</span> = call fully ended (answered, no-answer, invalid number, etc.).
@@ -701,7 +704,7 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <h5 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              Contact Details
+              {t("Contact Details")}
               {totalContacts > 0 && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-secondary text-xs text-muted-foreground font-normal">
                   {totalContacts} {totalContacts === 1 ? 'contact' : 'contacts'}
@@ -793,19 +796,19 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
                         onClick={() => setActiveTab("overview")}
                         className={cn("px-3 py-1.5 text-xs rounded-t-md border-b-2", activeTab === "overview" ? "border-blue-500 text-blue-600 font-semibold" : "border-transparent text-muted-foreground")}
                       >
-                        Overview
+                        {t("Overview")}
                       </button>
                       <button
                         onClick={() => setActiveTab("transcript")}
                         className={cn("px-3 py-1.5 text-xs rounded-t-md border-b-2", activeTab === "transcript" ? "border-blue-500 text-blue-600 font-semibold" : "border-transparent text-muted-foreground")}
                       >
-                        Transcript
+                        {t("Transcript")}
                       </button>
                       <button
                         onClick={() => setActiveTab("metadata")}
                         className={cn("px-3 py-1.5 text-xs rounded-t-md border-b-2", activeTab === "metadata" ? "border-blue-500 text-blue-600 font-semibold" : "border-transparent text-muted-foreground")}
                       >
-                        Metadata
+                        {t("Metadata")}
                       </button>
                     </div>
 
