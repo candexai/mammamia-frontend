@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Phone, TestTube2 } from "lucide-react";
+import { TestTube2 } from "lucide-react";
 import { useKnowledgeBase } from "@/contexts/KnowledgeBaseContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAIBehavior } from "@/hooks/useAIBehavior";
 import { usePhoneNumbersList } from "@/hooks/usePhoneNumber";
 import { useAgents } from "@/hooks/useAgents";
 import { useOutboundCall } from "@/hooks/useSipTrunk";
+import { collectAgentPreviewDynamicVariableKeys } from "@/utils/agentDynamicVariables";
 import { toast } from "sonner";
+
+/** Placeholders filled from customer name / email fields in the test modal */
+const STANDARD_DYNAMIC_KEYS = new Set(["name", "customer_name", "email", "customer_email"]);
 
 const LANGUAGE_OPTIONS = [
   { code: 'en', name: 'English' },
@@ -39,7 +43,47 @@ export function VoiceAgentAnswering() {
   const [callerProvider, setCallerProvider] = useState<'sip' | 'twilio'>('sip');
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [agentVarValues, setAgentVarValues] = useState<Record<string, string>>({});
   const [isTesting, setIsTesting] = useState(false);
+
+  const selectedAgent = useMemo(
+    () => agents.find((agent) => agent._id === selectedAgentId),
+    [agents, selectedAgentId]
+  );
+
+  const agentDynamicKeys = useMemo(() => {
+    if (!selectedAgent) return [];
+    return collectAgentPreviewDynamicVariableKeys(
+      selectedAgent.first_message,
+      selectedAgent.system_prompt
+    );
+  }, [selectedAgent]);
+
+  const extraDynamicKeys = useMemo(
+    () => agentDynamicKeys.filter((k) => !STANDARD_DYNAMIC_KEYS.has(k)),
+    [agentDynamicKeys]
+  );
+
+  useEffect(() => {
+    if (!selectedAgentId) {
+      setAgentVarValues({});
+      return;
+    }
+    setAgentVarValues(
+      Object.fromEntries(extraDynamicKeys.map((k) => [k, ""]))
+    );
+  }, [selectedAgentId, extraDynamicKeys.join(",")]);
+
+  const resetTestModal = () => {
+    setShowTestModal(false);
+    setTestPhoneNumber("");
+    setCustomerName("");
+    setCustomerEmail("");
+    setSelectedAgentId("");
+    setSelectedPhoneNumberId("");
+    setCallerProvider("sip");
+    setAgentVarValues({});
+  };
 
   useEffect(() => {
     setImprovements(voiceAgentPrompt);
@@ -155,12 +199,35 @@ export function VoiceAgentAnswering() {
 
     const nameTrim = customerName.trim();
     const emailTrim = customerEmail.trim();
+
+    const missingExtra = extraDynamicKeys.filter(
+      (k) => !String(agentVarValues[k] ?? "").trim()
+    );
+    if (missingExtra.length > 0) {
+      toast.error(
+        `Please enter values for: ${missingExtra.map((k) => `{{${k}}}`).join(", ")}`
+      );
+      return;
+    }
+
     const customer_info = { name: nameTrim, email: emailTrim };
-    const dynamic_variables = {
+    const dynamic_variables: Record<string, string> = {
       name: nameTrim,
       customer_name: nameTrim,
-      email: emailTrim
+      email: emailTrim,
     };
+
+    for (const key of agentDynamicKeys) {
+      if (STANDARD_DYNAMIC_KEYS.has(key)) {
+        if (key === "name" || key === "customer_name") {
+          dynamic_variables[key] = nameTrim;
+        } else {
+          dynamic_variables[key] = emailTrim;
+        }
+      } else {
+        dynamic_variables[key] = String(agentVarValues[key] ?? "").trim();
+      }
+    }
 
     setIsTesting(true);
     try {
@@ -188,13 +255,7 @@ export function VoiceAgentAnswering() {
           }, 1000); // Small delay to ensure conversation is created
         }
 
-        setShowTestModal(false);
-        setTestPhoneNumber("");
-        setCustomerName("");
-        setCustomerEmail("");
-        setSelectedAgentId("");
-        setSelectedPhoneNumberId("");
-        setCallerProvider('sip');
+        resetTestModal();
       } else {
         toast.error(result.message || 'Outbound call failed');
       }
@@ -272,6 +333,14 @@ export function VoiceAgentAnswering() {
                 {!isLoadingAgents && agents.length === 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
                     No agents available. Please create an agent first.
+                  </p>
+                )}
+                {selectedAgentId && agentDynamicKeys.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    This agent uses dynamic placeholders in its prompts
+                    {extraDynamicKeys.length > 0
+                      ? " — fill in the additional fields below before starting the call."
+                      : " — customer name and email will be used for {{name}} and {{email}} placeholders."}
                   </p>
                 )}
               </div>
@@ -359,19 +428,40 @@ export function VoiceAgentAnswering() {
                   className="w-full bg-secondary border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                 />
               </div>
+
+              {extraDynamicKeys.length > 0 && (
+                <div className="space-y-4 rounded-lg border border-border bg-secondary/30 p-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-foreground">Agent variables</h4>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Required by this agent&apos;s first message or system prompt.
+                    </p>
+                  </div>
+                  {extraDynamicKeys.map((key) => (
+                    <div key={key}>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">{`{{${key}}}`}</code>
+                        <span className="text-red-500 ml-1">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={agentVarValues[key] ?? ""}
+                        onChange={(e) =>
+                          setAgentVarValues((prev) => ({ ...prev, [key]: e.target.value }))
+                        }
+                        placeholder={`Value for ${key}`}
+                        autoComplete="off"
+                        className="w-full bg-secondary border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
               <button
-                onClick={() => {
-                  setShowTestModal(false);
-                  setTestPhoneNumber("");
-                  setCustomerName("");
-                  setCustomerEmail("");
-                  setSelectedAgentId("");
-                  setSelectedPhoneNumberId("");
-                  setCallerProvider('sip');
-                }}
+                onClick={resetTestModal}
                 disabled={isTesting}
                 className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
               >
@@ -379,7 +469,15 @@ export function VoiceAgentAnswering() {
               </button>
               <button
                 onClick={handleTestVoiceAgent}
-                disabled={isTesting || !selectedAgentId || !selectedPhoneNumberId || !testPhoneNumber.trim() || !customerName.trim() || !customerEmail.trim()}
+                disabled={
+                  isTesting ||
+                  !selectedAgentId ||
+                  !selectedPhoneNumberId ||
+                  !testPhoneNumber.trim() ||
+                  !customerName.trim() ||
+                  !customerEmail.trim() ||
+                  extraDynamicKeys.some((k) => !String(agentVarValues[k] ?? "").trim())
+                }
                 className="px-6 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
               >
                 {isTesting ? 'Calling...' : 'Start Test Call'}

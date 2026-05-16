@@ -23,25 +23,16 @@ export interface OutboundCallResponse {
 
 /**
  * Mutation to initiate a single outbound call (test call or one-off).
- * Calls POST /api/v1/sip-trunk/outbound-call (for SIP) or POST /api/v1/phone-numbers/twilio/outbound-call (for Twilio).
- * Provider defaults to 'sip' if not specified.
+ * Calls POST /api/v1/sip-trunk/outbound-call.
+ * Twilio vs SIP routing is resolved server-side from the selected phone number.
  */
 export function useOutboundCall() {
   return useMutation({
     mutationFn: async (data: OutboundCallRequest) => {
-      // Extract provider and remove it from the request body
-      const { provider = 'sip', ...requestData } = data;
-      
-      // Choose endpoint based on provider
-      let endpoint: string;
-      if (provider === 'twilio') {
-        endpoint = '/phone-numbers/twilio/outbound-call';
-        console.log('📞 [useOutboundCall] Using Twilio endpoint:', endpoint);
-      } else {
-        endpoint = '/sip-trunk/outbound-call';
-        console.log('📞 [useOutboundCall] Using SIP endpoint:', endpoint);
-      }
-      
+      const { provider: _provider, ...requestData } = data;
+      const endpoint = '/sip-trunk/outbound-call';
+      console.log('📞 [useOutboundCall] POST', endpoint, _provider ? `(provider hint: ${_provider})` : '');
+
       const response = await apiClient.post<OutboundCallResponse>(endpoint, requestData);
       return response;
     },

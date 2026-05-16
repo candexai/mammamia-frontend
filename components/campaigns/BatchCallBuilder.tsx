@@ -5,7 +5,6 @@ import { Upload, Download, Phone, FileText } from "lucide-react";
 import { usePhoneNumbersList } from "@/hooks/usePhoneNumber";
 import { useAgents } from "@/hooks/useAgents";
 import { useSubmitBatchCall } from "@/hooks/useBatchCalling";
-import { useSocialIntegrationsStatus } from "@/hooks/useSocialIntegrationsStatus";
 import { useOutboundCall } from "@/hooks/useSipTrunk";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -32,7 +31,6 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
   const { data: phoneNumbers } = usePhoneNumbersList();
   const outboundPhoneNumbers = phoneNumbers?.filter(phone => phone.supports_outbound === true) || [];
   const { data: agents = [], isLoading: isLoadingAgents } = useAgents();
-  const { integrations } = useSocialIntegrationsStatus();
   const submitBatchCallMutation = useSubmitBatchCall();
   const outboundCallMutation = useOutboundCall();
 
@@ -375,12 +373,6 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
       return;
     }
 
-    // Get sender email from Gmail integration
-    let senderEmail = '';
-    if (integrations.gmail?.status === 'connected') {
-      senderEmail = integrations.gmail.credentials?.email || integrations.gmail.metadata?.email || '';
-    }
-
     setIsTestingCall(true);
     try {
       await outboundCallMutation.mutateAsync({
@@ -391,7 +383,7 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
           name: testCustomerName,
           ...(testCustomerEmail.trim() && { email: testCustomerEmail })
         },
-        ...(senderEmail && { sender_email: senderEmail })
+        omit_sender_email: true,
       });
       toast.success("Test call initiated successfully!");
     } catch (error: any) {
@@ -542,12 +534,6 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
       return;
     }
 
-    // Get sender email from Gmail integration
-    let senderEmail = '';
-    if (integrations.gmail?.status === 'connected') {
-      senderEmail = integrations.gmail.credentials?.email || integrations.gmail.metadata?.email || '';
-    }
-
     // Validate phone_number_id is set
     if (!selectedPhoneNumberId || selectedPhoneNumberId.trim() === '') {
       toast.error("Please select a phone number");
@@ -615,11 +601,6 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
 
       payload.timezone = "Europe/Rome";
 
-      // Only add sender_email if it exists
-      if (senderEmail) {
-        payload.sender_email = senderEmail;
-      }
-
       // Include the user-selected CSV dynamic variable keys
       if (selectedDynamicVariables.length > 0) {
         payload.selected_dynamic_variable_keys = selectedDynamicVariables;
@@ -631,7 +612,6 @@ export function BatchCallBuilder({ onClose, onSuccess }: BatchCallBuilderProps) 
         phone_number_id: payload.phone_number_id,
         recipients_count: payload.recipients.length,
         retry_count: payload.retry_count,
-        sender_email: payload.sender_email || 'not provided',
         greeting_variables: greetingVariables
       });
 
