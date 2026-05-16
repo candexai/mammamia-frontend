@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiClient } from "@/lib/api";
 import { redirectToWooCheckout } from "@/lib/woocommerceCheckout";
+import { isUnlimitedPlan, unlimitedPlanContactMailto } from "@/lib/planUtils";
 
 interface ProfileType {
   type: string;
@@ -123,6 +124,9 @@ export default function ProfilePage() {
       case 'set-up':
         return <TrendingUp className="w-8 h-8" />;
       default:
+        if (slug.toLowerCase().includes('unlimited')) {
+          return <TrendingUp className="w-8 h-8" />;
+        }
         return <TrendingUp className="w-8 h-8" />;
     }
   };
@@ -138,6 +142,9 @@ export default function ProfilePage() {
       case 'set-up':
         return 'from-purple-500 to-violet-600'; // Purple
       default:
+        if (slug.toLowerCase().includes('unlimited')) {
+          return 'from-indigo-500 to-purple-600';
+        }
         return 'from-primary/80 to-primary';
     }
   };
@@ -825,6 +832,7 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
               {plans.map((plan) => {
                 const isCurrentPlan = currentPlanId === plan._id || currentPlanId === plan.slug;
+                const isUnlimited = isUnlimitedPlan(plan);
 
                 return (
                   <Card
@@ -845,10 +853,14 @@ export default function ProfilePage() {
                         )}
                       </div>
                       <h3 className="text-2xl font-bold mb-1">{plan.name}</h3>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold">€{plan.price}</span>
-                        <span className="text-sm opacity-90">/month</span>
-                      </div>
+                      {isUnlimited ? (
+                        <p className="text-2xl font-bold mt-1">Contact us</p>
+                      ) : (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-bold">€{plan.price}</span>
+                          <span className="text-sm opacity-90">/month</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Features */}
@@ -911,14 +923,30 @@ export default function ProfilePage() {
                         )}
                       </div>
 
-                      <Button
-                        onClick={() => handleSelectPlan(plan)}
-                        disabled={isCurrentPlan}
-                        className="w-full mt-auto cursor-pointer"
-                        variant={isCurrentPlan ? "outline" : "default"}
-                      >
-                        {isCurrentPlan ? "Current Plan" : "Upgrade"}
-                      </Button>
+                      {isUnlimited ? (
+                        isCurrentPlan ? (
+                          <Button
+                            disabled
+                            className="w-full mt-auto cursor-pointer"
+                            variant="outline"
+                          >
+                            Current Plan
+                          </Button>
+                        ) : (
+                          <Button asChild className="w-full mt-auto cursor-pointer">
+                            <a href={unlimitedPlanContactMailto()}>Contact us</a>
+                          </Button>
+                        )
+                      ) : (
+                        <Button
+                          onClick={() => handleSelectPlan(plan)}
+                          disabled={isCurrentPlan}
+                          className="w-full mt-auto cursor-pointer"
+                          variant={isCurrentPlan ? "outline" : "default"}
+                        >
+                          {isCurrentPlan ? "Current Plan" : "Upgrade"}
+                        </Button>
+                      )}
                     </div>
                   </Card>
                 );
