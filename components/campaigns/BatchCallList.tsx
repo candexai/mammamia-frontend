@@ -287,7 +287,7 @@ export function BatchCallList({ onClose, onCreateNew }: BatchCallListProps) {
                       <div className="mt-2 text-xs text-muted-foreground">
                         <div>{t("Created:")} {formatDate(batchCall.created_at_unix)}</div>
                         {batchCall.scheduled_time_unix && (
-                          <div>{t("Scheduled:")} {formatDate(batchCall.scheduled_time_unix)}</div>
+                          <div>{t("Scheduled for:")} {formatDate(batchCall.scheduled_time_unix)}</div>
                         )}
                         {displayStatus.scheduledNote && (
                           <div className="text-blue-500 mt-1">{displayStatus.scheduledNote}</div>
