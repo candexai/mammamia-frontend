@@ -79,11 +79,11 @@ export const automationTemplates: AutomationTemplate[] = [
         config: {
           conversation_id: "{{conversation_id}}",
           extraction_type: "appointment",
-          extraction_prompt: "Extract whether a person booked an apppoinment or not",
+          extraction_prompt: "Extract whether a person booked an appointment or not",
           json_example: {
-            appointment_booked: "True",
-            appointment_date: "2026-05-20",
-            appointment_time: "14:30",
+            appointment_booked: false,
+            appointment_date: "",
+            appointment_time: "",
           },
         },
         position: 1,
@@ -364,11 +364,11 @@ export const automationTemplates: AutomationTemplate[] = [
         config: {
           conversation_id: "{{conversation_id}}",
           extraction_type: "appointment",
-          extraction_prompt: "Extract whether a person booked an apppoinment or not",
+          extraction_prompt: "Extract whether a person booked an appointment or not",
           json_example: {
-            appointment_booked: "True",
-            appointment_date: "2026-05-20",
-            appointment_time: "14:30",
+            appointment_booked: false,
+            appointment_date: "",
+            appointment_time: "",
           },
         },
         position: 1,

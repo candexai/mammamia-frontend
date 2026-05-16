@@ -11,6 +11,11 @@ import { useSocialIntegrationsStatus } from "@/hooks/useSocialIntegrationsStatus
 import { useAgents } from "@/hooks/useAgents";
 import { usePhoneNumbersList } from "@/hooks/usePhoneNumber";
 import { automationService } from "@/services/automation.service";
+import {
+  EXTRACT_APPOINTMENT_DEFAULT_JSON,
+  EXTRACT_APPOINTMENT_DEFAULT_PROMPT,
+  mergeSchemaForExtractAppointmentNode,
+} from "@/utils/extractAppointmentSchema";
 
 interface NodeConfigPanelProps {
   node: AutomationNode;
@@ -1332,14 +1337,22 @@ export function NodeConfigPanel({
                       setSuggestingFromAgent(true);
                       try {
                         const result = await automationService.suggestExtractionSchema({ agent_id: agentId });
-                        const prompt = result?.extraction_prompt ?? "";
-                        const example = result?.json_example ?? {};
-                        setJsonExampleRaw(JSON.stringify(example, null, 2));
+                        const merged =
+                          node.service === "aistein_extract_appointment"
+                            ? mergeSchemaForExtractAppointmentNode(
+                                result?.extraction_prompt ?? "",
+                                (result?.json_example ?? {}) as Record<string, unknown>
+                              )
+                            : {
+                                extraction_prompt: result?.extraction_prompt ?? "",
+                                json_example: result?.json_example ?? {},
+                              };
+                        setJsonExampleRaw(JSON.stringify(merged.json_example, null, 2));
                         onUpdate({
                           ...node.config,
                           extraction_agent_id: agentId,
-                          extraction_prompt: prompt,
-                          json_example: example,
+                          extraction_prompt: merged.extraction_prompt,
+                          json_example: merged.json_example,
                         });
                         toast.success("Extraction prompt and JSON filled from agent.");
                       } catch (err: unknown) {
@@ -1373,14 +1386,22 @@ export function NodeConfigPanel({
                         setSuggestingFromAgent(true);
                         try {
                           const result = await automationService.suggestExtractionSchema({ agent_id: agentId });
-                          const prompt = result?.extraction_prompt ?? "";
-                          const example = result?.json_example ?? {};
-                          setJsonExampleRaw(JSON.stringify(example, null, 2));
+                          const merged =
+                            node.service === "aistein_extract_appointment"
+                              ? mergeSchemaForExtractAppointmentNode(
+                                  result?.extraction_prompt ?? "",
+                                  (result?.json_example ?? {}) as Record<string, unknown>
+                                )
+                              : {
+                                  extraction_prompt: result?.extraction_prompt ?? "",
+                                  json_example: result?.json_example ?? {},
+                                };
+                          setJsonExampleRaw(JSON.stringify(merged.json_example, null, 2));
                           onUpdate({
                             ...node.config,
                             extraction_agent_id: agentId,
-                            extraction_prompt: prompt,
-                            json_example: example,
+                            extraction_prompt: merged.extraction_prompt,
+                            json_example: merged.json_example,
                           });
                           toast.success("Extraction prompt and JSON regenerated from agent.");
                         } catch (err: unknown) {
@@ -1441,7 +1462,11 @@ export function NodeConfigPanel({
                     }
                   }}
                   className="w-full min-h-[120px] font-mono text-sm bg-secondary border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors resize-y"
-                  placeholder='{"interested_in_loan": true, "product": "Home insurance", "amount_eur": 250, "customer_name": "", "city": "", "country": ""}'
+                  placeholder={
+                    node.service === "aistein_extract_appointment"
+                      ? JSON.stringify(EXTRACT_APPOINTMENT_DEFAULT_JSON, null, 2)
+                      : '{"interested_in_loan": true, "product": "Home insurance", "amount_eur": 250, "customer_name": "", "city": "", "country": ""}'
+                  }
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   One JSON object. Keys become available as &#123;&#123;extracted.key&#125;&#125; in Sheets, Gmail, and conditions. Column mapping and nodes use this + CSV variables.
