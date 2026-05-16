@@ -224,26 +224,36 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
     updateAutomations(updatedAutomations);
   };
 
-  // Validate automation completeness (non-breaking: only for Google Sheets)
+  // Validate automation completeness (only blocks Save for Google Sheets nodes)
   const isAutomationIncomplete = () => {
     if (!selectedAutomation) return true;
 
-    // Check if any Google Sheets node is incomplete
     const incompleteNode = selectedAutomation.nodes.find((node) => {
       if (
-        node.service === "aistein_google_sheet_append_row" ||
-        node.service === "aistein_user_google_sheet_append_row"
+        node.service !== "aistein_google_sheet_append_row" &&
+        node.service !== "aistein_user_google_sheet_append_row"
       ) {
-        const hasSpreadsheetId = !!(node.config.spreadsheetId && node.config.spreadsheetId.trim() !== "");
-        const hasValues = !!(
-          node.config.values &&
-          Array.isArray(node.config.values) &&
-          node.config.values.length > 0 &&
-          node.config.values.some((v: string) => v && String(v).trim() !== "")
-        );
-        return !hasSpreadsheetId || !hasValues;
+        return false;
       }
-      return false;
+
+      const hasSpreadsheetId = !!(
+        node.config.spreadsheetId &&
+        String(node.config.spreadsheetId).trim() !== ""
+      );
+
+      // Fixed format (default for templates): only spreadsheet is required — columns are auto-filled at runtime.
+      const useFixedFormat = node.config.useFixedFormat !== false;
+      if (useFixedFormat) {
+        return !hasSpreadsheetId;
+      }
+
+      const hasValues = !!(
+        node.config.values &&
+        Array.isArray(node.config.values) &&
+        node.config.values.length > 0 &&
+        node.config.values.some((v: string) => v && String(v).trim() !== "")
+      );
+      return !hasSpreadsheetId || !hasValues;
     });
 
     return !!incompleteNode;
@@ -670,7 +680,11 @@ export const NodeBasedBuilder = forwardRef<NodeBasedBuilderRef, NodeBasedBuilder
             onClick={handleSaveAutomation}
             disabled={saving || !selectedAutomation || isAutomationIncomplete()}
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-xl text-sm font-semibold hover:brightness-110 hover:shadow-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            title={isAutomationIncomplete() ? "Please complete Google Sheets configuration (spreadsheet and column mapping required)" : ""}
+            title={
+              isAutomationIncomplete()
+                ? "Open the Google Sheets step, select a spreadsheet, save that node, then save the automation"
+                : ""
+            }
           >
             <Check className="w-4 h-4" />
             <span>{saving ? 'Saving...' : 'Save'}</span>
