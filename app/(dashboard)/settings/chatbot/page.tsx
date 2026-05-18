@@ -397,7 +397,7 @@ export default function ChatbotSettingsPage() {
                 onClick={() => setActiveLanguage(lang)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeLanguage === lang
-                    ? "bg-primary text-foreground"
+                    ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -458,7 +458,7 @@ export default function ChatbotSettingsPage() {
           <button
             onClick={handleSave}
             disabled={updateSettings.isPending || isLoading}
-            className="w-full h-12 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-12 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {updateSettings.isPending ? "Saving..." : "Save Changes"}
           </button>

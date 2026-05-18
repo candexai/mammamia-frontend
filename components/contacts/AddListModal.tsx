@@ -117,7 +117,7 @@ export function AddListModal({ isOpen, onClose, onSave }: AddListModalProps) {
               "px-6 py-2 rounded-lg font-medium transition-all",
               !listName.trim() || isSaving
                 ? "bg-gray-700 text-muted-foreground cursor-not-allowed"
-                : "bg-primary text-foreground hover:brightness-110"
+                : "bg-primary text-primary-foreground hover:brightness-110"
             )}
           >
             {isSaving ? "Creating..." : "Create List"}

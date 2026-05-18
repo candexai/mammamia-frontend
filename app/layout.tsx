@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers/AppProviders";
 import { AutoTranslate } from "@/components/AutoTranslate";
+import { metadata as brandMetadata } from "@/lib/brand";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,8 +20,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aistein.It - Chatbot Management Platform",
-  description: "AI-powered chatbot management platform",
+  title: brandMetadata.title,
+  description: brandMetadata.description,
+  icons: {
+    icon: "/brand-icon.svg",
+  },
 };
 
 export default function RootLayout({

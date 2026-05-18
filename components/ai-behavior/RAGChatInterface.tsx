@@ -284,7 +284,7 @@ export function RAGChatInterface() {
                   <div
                     className={`rounded-2xl px-4 py-3 ${
                       message.role === 'user'
-                        ? 'bg-primary text-foreground'
+                        ? 'bg-primary text-primary-foreground'
                         : 'bg-secondary text-foreground'
                     }`}
                   >
@@ -365,7 +365,7 @@ export function RAGChatInterface() {
             <button
               onClick={handleSend}
               disabled={!query.trim() || selectedCollections.length === 0 || isSending}
-              className="px-6 py-3 bg-primary text-foreground rounded-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[100px]"
+              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[100px]"
             >
               {isSending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

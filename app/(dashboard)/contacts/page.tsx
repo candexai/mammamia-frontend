@@ -371,7 +371,7 @@ export default function ContactsPage() {
         <div className="p-3 pb-5">
           <button
             onClick={() => setIsAddListModalOpen(true)}
-            className="w-full h-10 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all flex items-center justify-center gap-2"
+            className="w-full h-10 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" />
             <span>Add List</span>

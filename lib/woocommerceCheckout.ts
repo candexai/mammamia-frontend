@@ -88,8 +88,8 @@ export function redirectToWooCheckout(planSlug: string, userId: string | undefin
   const userMongoId = userId;
 
   // Build WooCommerce checkout URL
-  // Format: https://www.aistein.it/?add-to-cart=PRODUCT_ID&redirect_to_checkout=1&uid=USER_ID&plan=PLAN_KEY&intent=INTENT_ID
-  const checkoutUrl = new URL("https://www.aistein.it/");
+  // Format: https://www.mammam-ia.it/?add-to-cart=PRODUCT_ID&redirect_to_checkout=1&uid=USER_ID&plan=PLAN_KEY&intent=INTENT_ID
+  const checkoutUrl = new URL("https://www.mammam-ia.it/");
   checkoutUrl.searchParams.set("add-to-cart", productId.toString());
   checkoutUrl.searchParams.set("redirect_to_checkout", "1");
   checkoutUrl.searchParams.set("uid", userMongoId);

@@ -566,7 +566,7 @@ export function CSVImportModal({ isOpen, onClose, onImport, listName }: CSVImpor
               "px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2",
               !file || importing
                 ? "bg-gray-700 text-muted-foreground cursor-not-allowed"
-                : "bg-primary text-foreground hover:brightness-110"
+                : "bg-primary text-primary-foreground hover:brightness-110"
             )}
           >
             {importing && !isCompleted && <Loader2 className="w-4 h-4 animate-spin" />}

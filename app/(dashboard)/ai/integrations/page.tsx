@@ -236,7 +236,7 @@ export default function IntegrationsPage() {
                 </button>
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="flex items-center gap-2 px-6 py-2 bg-primary text-foreground rounded-xl font-medium hover:brightness-110 transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-xl font-medium hover:brightness-110 transition-all cursor-pointer"
                 >
                   <Plus className="w-5 h-5" />
                   New Integration

@@ -145,7 +145,7 @@ export function AddToListModal({
               "px-6 py-2 rounded-lg font-medium transition-all",
               !selectedListId || isAdding || lists.length === 0
                 ? "bg-gray-700 text-muted-foreground cursor-not-allowed"
-                : "bg-primary text-foreground hover:brightness-110"
+                : "bg-primary text-primary-foreground hover:brightness-110"
             )}
           >
             {isAdding ? "Adding..." : "Add to List"}

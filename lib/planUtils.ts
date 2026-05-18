@@ -1,6 +1,6 @@
 import type { Plan } from "@/services/plan.service";
 
-export const UNLIMITED_PLAN_CONTACT_EMAIL = "info@aistein.it";
+export const UNLIMITED_PLAN_CONTACT_EMAIL = "info@mammam-ia.it";
 
 /** User-facing: enterprise / unlimited tier — no self-serve checkout. */
 export function isUnlimitedPlan(plan: Pick<Plan, "slug" | "name" | "price" | "features">): boolean {

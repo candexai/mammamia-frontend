@@ -59,7 +59,7 @@ export function KnowledgeBaseList() {
       <div className="flex items-center justify-end">
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Create Knowledge Base
@@ -85,7 +85,7 @@ export function KnowledgeBaseList() {
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-primary/20"
+            className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-primary/20"
           >
             <Plus className="w-4 h-4" />
             Create First Knowledge Base

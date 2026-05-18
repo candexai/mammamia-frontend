@@ -43,7 +43,7 @@ export function PromptEditor({
       {/* Apply button */}
       <button
         onClick={handleApplyChange}
-        className="px-8 py-3 bg-primary text-white rounded-lg text-sm font-medium hover:brightness-110 transition-all"
+        className="px-8 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all"
       >
         Apply Change
       </button>

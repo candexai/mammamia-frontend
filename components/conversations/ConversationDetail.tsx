@@ -801,7 +801,7 @@ export function ConversationDetail({
                               }
                             }
                           }}
-                          className="w-10 h-10 rounded-full bg-primary hover:bg-primary/90 text-white flex items-center justify-center transition-colors"
+                          className="w-10 h-10 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-colors"
                         >
                           {isPlaying ? (
                             <Pause className="w-5 h-5" />

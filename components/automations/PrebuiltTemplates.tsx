@@ -7,6 +7,7 @@ import { Automation, AutomationNode } from "@/data/mockAutomations";
 import { apiClient } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { getAutomationServiceLabel } from "@/lib/automationServiceLabels";
 
 interface PrebuiltTemplatesProps {
   onUseTemplate: (template: Automation) => void;
@@ -173,28 +174,7 @@ export function PrebuiltTemplates({ onUseTemplate }: PrebuiltTemplatesProps) {
     return serviceMap[service] || "⚙️";
   };
 
-  const getNodeName = (service: string): string => {
-    const nameMap: Record<string, string> = {
-      aistein_contact_created: "Contact Created",
-      aistein_create_contact: "Create Contact",
-      whatsapp_template: "WhatsApp Message",
-      aistein_send_email: "Aistein – Send Email",
-      aistein_outbound_call: "Outbound Call",
-      aistein_mass_sending: "Mass Sending",
-      batch_call: "Batch Call (CSV/List)",
-      batch_call_completed: "Batch Call Completed",
-      inbound_call_completed: "Inbound Call Completed",
-      webhook: "Webhook",
-      delay: "Delay",
-      aistein_google_gmail_send: "Gmail – Send Email",
-      aistein_extract_appointment: "Extract Appointment",
-      aistein_google_calendar_check_availability: "Check Calendar Availability",
-      aistein_google_calendar_create_event: "Create Calendar Event",
-      aistein_google_sheet_append_row: "Add to Google Sheets",
-      condition: "Condition",
-    };
-    return nameMap[service] || service;
-  };
+  const getNodeName = (service: string): string => getAutomationServiceLabel(service);
 
   const handleUseTemplate = async (template: AutomationTemplate) => {
     try {

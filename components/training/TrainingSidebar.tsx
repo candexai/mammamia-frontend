@@ -9,6 +9,7 @@ type MenuItem = {
   icon: React.ElementType;
   label: string;
   href: string;
+  match?: (pathname: string) => boolean;
 };
 
 export function TrainingSidebar() {
@@ -19,6 +20,10 @@ export function TrainingSidebar() {
       icon: MessageSquare,
       label: "AI Behavior",
       href: "/ai",
+      match: (p) =>
+        p === "/ai" ||
+        p.startsWith("/ai/behavior") ||
+        p.startsWith("/ai/voice"),
     },
     {
       icon: Bot,
@@ -32,7 +37,8 @@ export function TrainingSidebar() {
     },
   ];
 
-  const isActive = (href: string) => pathname === href;
+  const isActive = (item: MenuItem) =>
+    item.match ? item.match(pathname) : pathname === item.href || pathname.startsWith(item.href + "/");
 
   return (
     <div className="w-[260px] bg-card border-r border-border h-full flex flex-col">
@@ -43,15 +49,16 @@ export function TrainingSidebar() {
       <nav className="flex-1 space-y-1 px-3 pb-3">
         {menuItems.map((item) => {
           const Icon = item.icon;
+          const active = isActive(item);
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer",
-                isActive(item.href)
-                  ? "bg-primary text-foreground"
-                  : "text-secondary-foreground hover:bg-secondary"
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer",
+                active
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
               <Icon className="w-5 h-5 shrink-0" />
@@ -63,4 +70,3 @@ export function TrainingSidebar() {
     </div>
   );
 }
-

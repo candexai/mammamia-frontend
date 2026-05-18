@@ -122,7 +122,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
               <button
                 type="button"
                 onClick={handleCustomApply}
-                className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors shrink-0"
+                className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
               >
                 Go
               </button>

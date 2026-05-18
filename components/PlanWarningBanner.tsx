@@ -62,7 +62,7 @@ export function PlanWarningBanner() {
             </p>
             <Link
               href="/settings/profile"
-              className="block w-full py-3.5 px-4 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5"
+              className="block w-full py-3.5 px-4 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5"
             >
               Upgrade Plan Now
             </Link>
@@ -160,7 +160,7 @@ export function PlanWarningBanner() {
           <p className="flex-1 text-sm font-medium">{topWarning.message}</p>
           <Link
             href="/settings/profile"
-            className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex-shrink-0"
+            className="px-4 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex-shrink-0"
           >
             Upgrade Plan
           </Link>

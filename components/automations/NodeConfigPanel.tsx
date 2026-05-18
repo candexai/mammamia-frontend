@@ -1948,7 +1948,7 @@ export function NodeConfigPanel({
                       fetchWhatsappTemplates('automatic');
                     }}
                     className={`flex-1 h-10 rounded-lg border text-sm flex items-center justify-center gap-2 transition-colors ${whatsappMode === 'automatic'
-                        ? 'bg-primary text-white border-primary'
+                        ? 'bg-primary text-primary-foreground border-primary'
                         : 'bg-secondary border-border text-foreground'
                       }`}
                   >
@@ -1961,7 +1961,7 @@ export function NodeConfigPanel({
                       onUpdate({ ...node.config, mode: 'manual' });
                     }}
                     className={`flex-1 h-10 rounded-lg border text-sm flex items-center justify-center gap-2 transition-colors ${whatsappMode === 'manual'
-                        ? 'bg-primary text-white border-primary'
+                        ? 'bg-primary text-primary-foreground border-primary'
                         : 'bg-secondary border-border text-foreground'
                       }`}
                   >
@@ -3420,7 +3420,7 @@ export function NodeConfigPanel({
             }
           }}
           disabled={saving}
-          className="w-full h-11 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+          className="w-full h-11 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
         >
           {saving ? (
             <>

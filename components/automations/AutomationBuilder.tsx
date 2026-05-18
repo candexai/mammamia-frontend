@@ -60,7 +60,7 @@ export function AutomationBuilder({ onSave, onCancel }: AutomationBuilderProps) 
         <button
           onClick={handleSave}
           disabled={!name || !trigger || !action}
-          className="px-8 py-3 bg-primary text-white rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-8 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Save Automation
         </button>

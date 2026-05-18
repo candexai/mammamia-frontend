@@ -91,7 +91,7 @@ export function WebsiteTab({
           <button
             onClick={handleAddWebsite}
             disabled={!urlInput.trim() || isAdding}
-            className="px-6 py-3 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Website"}
           </button>

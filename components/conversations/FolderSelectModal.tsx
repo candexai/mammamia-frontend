@@ -203,7 +203,7 @@ export function FolderSelectModal({
                 <button
                   onClick={handleCreateFolder}
                   disabled={creating || !newFolderName.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {creating && <Loader2 className="w-4 h-4 animate-spin" />}
                   Create

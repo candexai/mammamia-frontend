@@ -167,7 +167,7 @@ export default function ApiKeysSettingsPage() {
             <button
               onClick={handleSave}
               disabled={updateApiKeys.isPending || !apiKey.trim()}
-              className="h-11 px-6 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-11 px-6 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {updateApiKeys.isPending ? "Saving..." : "Save API Keys"}
             </button>

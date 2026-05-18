@@ -1,5 +1,5 @@
 /**
- * Aistein Chatbot Widget
+ * mammam-ia Chatbot Widget
  * 
  * This widget loads the platform widget UI via iframe to ensure consistent
  * styling and behavior across all embedding environments.
@@ -11,11 +11,16 @@
 (function() {
   'use strict';
 
+  function getWidgetConfig() {
+    return window.Mammamia || window.Aistein || {};
+  }
+
   // ========== PREVENT MULTIPLE WIDGET LOADS ==========
-  if (window.AISTEIN_WIDGET_LOADED) {
-    console.warn('[Aistein Widget] Widget already loaded.');
+  if (window.MAMMAMIA_WIDGET_LOADED || window.AISTEIN_WIDGET_LOADED) {
+    console.warn('[mammam-ia Widget] Widget already loaded.');
     return;
   }
+  window.MAMMAMIA_WIDGET_LOADED = true;
   window.AISTEIN_WIDGET_LOADED = true;
 
   // ========== 1️⃣ SINGLE SOURCE OF TRUTH FOR widgetId ==========
@@ -28,8 +33,9 @@
    */
   function resolveWidgetId() {
     // Priority 1: embed script config
-    if (window.Aistein && typeof window.Aistein.widgetId === 'string' && window.Aistein.widgetId.trim() !== '') {
-      return window.Aistein.widgetId.trim();
+    const cfg = getWidgetConfig();
+    if (cfg && typeof cfg.widgetId === 'string' && cfg.widgetId.trim() !== '') {
+      return getWidgetConfig().widgetId.trim();
     }
 
     // Priority 2: URL path (/widget/:widgetId)
@@ -45,24 +51,24 @@
   const widgetId = resolveWidgetId();
 
   if (!widgetId) {
-    console.error('[Aistein Widget] ❌ widgetId could not be resolved');
-    console.error('[Aistein Widget] pathname:', window.location.pathname);
-    console.error('[Aistein Widget] Aistein config:', window.Aistein);
+    console.error('[mammam-ia Widget] ❌ widgetId could not be resolved');
+    console.error('[mammam-ia Widget] pathname:', window.location.pathname);
+    console.error('[mammam-ia Widget] Aistein config:', window.Aistein);
     throw new Error('Widget ID is required but was not found. Please ensure the widget is configured correctly.');
   }
 
-  console.log('[Aistein Widget] ✅ Resolved widgetId:', widgetId);
-  console.log('[Aistein Widget] URL:', window.location.href);
+  console.log('[mammam-ia Widget] ✅ Resolved widgetId:', widgetId);
+  console.log('[mammam-ia Widget] URL:', window.location.href);
 
   // ========== WIDGET CONFIGURATION ==========
-  const config = window.Aistein || {};
+  const config = getWidgetConfig();
   
   // ========== FRONTEND URL RESOLUTION ==========
   /**
    * Resolves frontend base URL (where the widget page is hosted) with priority:
    * 1. config.frontendUrl (explicit override from embed script)
    * 2. Derive from script source URL (if loaded from app.aistein.it)
-   * 3. Default to https://app.aistein.it (production)
+   * 3. Default to https://www.mammam-ia.it (production)
    * 4. Localhost fallback for development
    */
   function resolveFrontendUrl() {
@@ -79,7 +85,7 @@
         try {
           const scriptUrl = new URL(scriptSrc);
           // If script is loaded from app.aistein.it, use that domain
-          if (scriptUrl.hostname === 'app.aistein.it' || scriptUrl.hostname.includes('aistein.it')) {
+          if (scriptUrl.hostname.includes('mammam-ia.it') || scriptUrl.hostname.includes('aistein.it')) {
             return scriptUrl.origin;
           }
         } catch (e) {
@@ -89,7 +95,7 @@
     }
     
     // Priority 3: Default production frontend URL
-    const DEFAULT_FRONTEND_URL = 'https://app.aistein.it';
+    const DEFAULT_FRONTEND_URL = 'https://www.mammam-ia.it';
     
     // Priority 4: Localhost fallback for development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -100,12 +106,12 @@
   }
   
   const FRONTEND_URL = resolveFrontendUrl();
-  console.log('[Aistein Widget] ✅ Resolved Frontend URL:', FRONTEND_URL);
+  console.log('[mammam-ia Widget] ✅ Resolved Frontend URL:', FRONTEND_URL);
 
   // ========== WIDGET STATE ==========
   let isOpen = false;
   let position = config.position || 'bottom-right';
-  let primaryColor = config.primaryColor || '#4F7DF3';
+  let primaryColor = config.primaryColor || '#111111';
   let clientLogoUrl = config.logoUrl || config.clientLogo || null;
 
   // ========== UTILITY FUNCTIONS ==========
@@ -149,7 +155,7 @@
   // ========== WIDGET UI (IFRAME-BASED) ==========
   function createWidget() {
     const widgetUrl = buildWidgetUrl();
-    console.log('[Aistein Widget] Loading widget from:', widgetUrl);
+    console.log('[mammam-ia Widget] Loading widget from:', widgetUrl);
 
     // Container for iframe
     const container = createElement('div', 'aistein-widget-container');

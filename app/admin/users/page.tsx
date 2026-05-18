@@ -231,7 +231,7 @@ export default function AdminUsersPage() {
                             setSelectedPlanId("");
                             setShowUpgradeModal(true);
                           }}
-                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-lg transition-all shadow-md hover:shadow-lg"
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-lg transition-all shadow-md hover:shadow-lg"
                         >
                           <CreditCard className="w-4 h-4" />
                           {user.selectedProfile ? 'Change Plan' : 'Assign Plan'}
@@ -488,7 +488,7 @@ export default function AdminUsersPage() {
               <button
                 onClick={handleAssignPlan}
                 disabled={!selectedPlanId || assignPlanMutation.isPending}
-                className="px-6 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
+                className="px-6 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
                 title={!selectedPlanId ? "Please select a plan first" : "Assign selected plan"}
               >
                 {assignPlanMutation.isPending ? (

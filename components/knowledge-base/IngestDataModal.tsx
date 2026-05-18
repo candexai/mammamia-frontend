@@ -287,7 +287,7 @@ export function IngestDataModal({ isOpen, onClose, collectionId }: IngestDataMod
             <button
               type="submit"
               disabled={isIngesting || (urlInput.length === 0 && pdfFiles.length === 0 && excelFiles.length === 0)}
-              className="flex items-center gap-2 px-6 py-2 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isIngesting && <Loader2 className="w-4 h-4 animate-spin" />}
               {isIngesting ? 'Ingesting...' : 'Ingest Documents'}

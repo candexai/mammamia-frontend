@@ -23,14 +23,14 @@ export default function AIPage() {
       <div className="h-20 px-8 flex items-center justify-between border-b border-border/60 bg-gradient-to-br from-background via-background to-primary/[0.02] backdrop-blur-xl shadow-[0_1px_0_0_rgba(255,255,255,0.05)_inset] flex-shrink-0 z-10">
         <div className="flex items-center gap-5">
           <div className="relative">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 flex items-center justify-center shadow-[0_8px_24px_rgba(99,102,241,0.25)] ring-1 ring-primary/20">
-              <Brain className="w-7 h-7 text-white" />
+            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg ring-1 ring-border">
+              <Brain className="w-7 h-7 text-primary-foreground" />
             </div>
           </div>
           <div>
             <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
               AI Dashboard
-              <Activity className="w-5 h-5 text-primary/80" />
+              <Activity className="w-5 h-5 text-muted-foreground" />
             </h1>
             <p className="text-sm text-muted-foreground/80 mt-1 font-medium">Configure and manage your AI agents</p>
           </div>

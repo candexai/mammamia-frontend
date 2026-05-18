@@ -185,7 +185,7 @@ export default function AdminPlansPage() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
           Create Plan
@@ -199,7 +199,7 @@ export default function AdminPlansPage() {
           <p className="text-muted-foreground mb-4">No plans created yet</p>
           <button
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             Create Your First Plan
@@ -511,7 +511,7 @@ export default function AdminPlansPage() {
               <button
                 onClick={handleSubmit}
                 disabled={createPlanMutation.isPending || updatePlanMutation.isPending}
-                className="px-6 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
+                className="px-6 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
               >
                 {(createPlanMutation.isPending || updatePlanMutation.isPending) ? (
                   <>

@@ -166,7 +166,7 @@ export function CampaignBuilder({ onClose, onSave }: CampaignBuilderProps) {
                   step > s.number
                     ? "bg-green-600 text-foreground"
                     : step === s.number
-                    ? "bg-primary text-foreground"
+                    ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-muted-foreground"
                 )}
               >

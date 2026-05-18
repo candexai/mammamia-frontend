@@ -239,7 +239,7 @@ export function ViewIntegrationModal({
             {!isEmailTemplate && onEdit && (
               <button
                 onClick={onEdit}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-foreground font-medium hover:brightness-110 transition-all"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:brightness-110 transition-all"
               >
                 <Edit2 className="w-4 h-4" />
                 Edit Integration

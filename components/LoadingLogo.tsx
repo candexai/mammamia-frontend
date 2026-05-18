@@ -1,91 +1,44 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { MammamiaLogo } from "@/components/brand/MammamiaLogo";
 
 interface LoadingLogoProps {
   size?: "sm" | "md" | "lg";
   showText?: boolean;
   text?: string;
   className?: string;
+  fullScreen?: boolean;
 }
 
-export function LoadingLogo({ 
-  size = "md", 
-  showText = true, 
+export function LoadingLogo({
+  size = "md",
+  showText = true,
   text = "Loading...",
-  className 
+  className,
+  fullScreen = false,
 }: LoadingLogoProps) {
-  const sizeClasses = {
-    sm: "w-12 h-12",
-    md: "w-16 h-16",
-    lg: "w-24 h-24"
-  };
+  const logoSize = size === "sm" ? "sm" : size === "lg" ? "lg" : "md";
 
-  const textSizeClasses = {
-    sm: "text-sm",
-    md: "text-base",
-    lg: "text-lg"
-  };
-
-  return (
-    <div className={cn("flex flex-col items-center gap-4", className)}>
-      {/* Logo with subtle pulse animation */}
-      <div className={cn("relative", sizeClasses[size])}>
-        <div className="absolute inset-0 animate-pulse opacity-20">
-          <div className="w-full h-full rounded-lg bg-primary blur-xl"></div>
-        </div>
-        <div className="relative w-full h-full flex items-center justify-center">
-          <img 
-            src="/Logo.webp" 
-            alt="Aistein.it Logo" 
-            className="w-full h-full object-cover rounded-lg"
-            onError={(e) => {
-              // Fallback to text if logo fails
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              if (target.parentElement) {
-                target.parentElement.innerHTML = '<div class="w-full h-full rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg">I</div>';
-              }
-            }}
-          />
-        </div>
+  const content = (
+    <div className={cn("flex flex-col items-center gap-5", className)}>
+      <MammamiaLogo size={logoSize} showWordmark className="flex-col gap-2" wordmarkClassName="text-foreground" />
+      <div className="w-36 h-1 bg-muted rounded-full overflow-hidden">
+        <div className="h-full w-2/5 bg-muted-foreground/40 rounded-full animate-[shimmer_1.4s_ease-in-out_infinite]" />
       </div>
-
-      {/* Loading bar */}
-      <div className="w-32 h-1.5 bg-secondary rounded-full overflow-hidden relative">
-        <div 
-          className="h-full bg-gradient-to-r from-primary via-primary/80 to-primary rounded-full absolute"
-          style={{
-            animation: 'shimmer 1.5s ease-in-out infinite',
-            width: '60%'
-          }}
-        ></div>
-      </div>
-
-      {/* Loading text */}
       {showText && (
-        <p className={cn("text-muted-foreground font-medium animate-pulse", textSizeClasses[size])}>
-          {text}
-        </p>
+        <p className="text-sm text-muted-foreground font-medium">{text}</p>
       )}
-
-      <style jsx>{`
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-            width: 20%;
-          }
-          50% {
-            transform: translateX(0%);
-            width: 60%;
-          }
-          100% {
-            transform: translateX(100%);
-            width: 20%;
-          }
-        }
-      `}</style>
     </div>
   );
-}
 
+  if (fullScreen) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background">
+        {content}
+      </div>
+    );
+  }
+
+  return content;
+}

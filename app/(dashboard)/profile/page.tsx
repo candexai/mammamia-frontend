@@ -58,8 +58,8 @@ export default function ProfilePage() {
   const generateTwoFactorQR = async () => {
     try {
       const newSecret = speakeasy.generateSecret({
-        name: `Aistein-It (${formData.email})`,
-        issuer: "Aistein-It",
+        name: `mammam-ia (${formData.email})`,
+        issuer: "mammam-ia",
       });
       
       setSecret(newSecret.base32);
@@ -175,7 +175,7 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <div 
-                    className="w-[120px] h-[120px] rounded-full bg-primary flex items-center justify-center text-white font-bold overflow-hidden"
+                    className="w-[120px] h-[120px] rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold overflow-hidden"
                     data-no-translate
                   >
                     <span className="text-4xl leading-none select-none" style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)' }}>

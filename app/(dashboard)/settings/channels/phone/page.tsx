@@ -1071,7 +1071,7 @@ export default function PhoneSettingsDetailPage() {
           onClick={() => setActiveTab("settings")}
           className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
             activeTab === "settings"
-              ? "bg-primary text-foreground"
+              ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -1081,7 +1081,7 @@ export default function PhoneSettingsDetailPage() {
           onClick={() => setActiveTab("voice")}
           className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
             activeTab === "voice"
-              ? "bg-primary text-foreground"
+              ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -1091,7 +1091,7 @@ export default function PhoneSettingsDetailPage() {
           onClick={() => setActiveTab("endOfCall")}
           className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
             activeTab === "endOfCall"
-              ? "bg-primary text-foreground"
+              ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -1101,7 +1101,7 @@ export default function PhoneSettingsDetailPage() {
           onClick={() => setActiveTab("inbound")}
           className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
             activeTab === "inbound"
-              ? "bg-primary text-foreground"
+              ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -1111,7 +1111,7 @@ export default function PhoneSettingsDetailPage() {
           onClick={() => setActiveTab("greeting")}
           className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
             activeTab === "greeting"
-              ? "bg-primary text-foreground"
+              ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -1682,7 +1682,7 @@ export default function PhoneSettingsDetailPage() {
               <button
                 onClick={handleSaveSettings}
                 disabled={isUpdating || createOrUpdateConfig.isPending || !selectedVoice}
-                className="h-11 px-6 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-11 px-6 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {(isUpdating || createOrUpdateConfig.isPending) ? "Saving..." : "Save Configuration"}
               </button>
@@ -1712,7 +1712,7 @@ export default function PhoneSettingsDetailPage() {
             <button
               onClick={handleSaveSettings}
               disabled={isUpdating || createOrUpdateConfig.isPending || !selectedVoice}
-              className="h-11 px-6 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-11 px-6 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {(isUpdating || createOrUpdateConfig.isPending) ? "Saving..." : "Save Voice Selection"}
             </button>
@@ -1798,7 +1798,7 @@ export default function PhoneSettingsDetailPage() {
               <button
                 onClick={handleSaveEscalationRules}
                 disabled={createOrUpdateConfig.isPending || (!selectedOutboundNumber && !twilioPhoneNumber)}
-                className="h-11 px-6 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-11 px-6 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {createOrUpdateConfig.isPending ? "Saving..." : "Save Escalation Rules"}
               </button>
@@ -1819,7 +1819,7 @@ export default function PhoneSettingsDetailPage() {
               <button
                 onClick={() => syncConfig.mutate()}
                 disabled={syncConfig.isPending}
-                className="h-9 px-4 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="h-9 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {syncConfig.isPending ? (
                   <>
@@ -1882,7 +1882,7 @@ export default function PhoneSettingsDetailPage() {
                       ) : (
                         <button
                           onClick={() => handleEditConfig(config)}
-                          className="h-8 px-3 bg-primary text-foreground rounded-lg text-xs font-medium hover:brightness-110 transition-colors"
+                          className="h-8 px-3 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:brightness-110 transition-colors"
                         >
                           Edit
                         </button>
@@ -2000,19 +2000,19 @@ export default function PhoneSettingsDetailPage() {
             <div className="flex items-center justify-center mb-8">
             <div className="flex items-center gap-4">
               <div className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold ${
-                inboundStep >= 1 ? 'bg-primary text-foreground' : 'bg-secondary text-muted-foreground'
+                inboundStep >= 1 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
               }`}>
                 1
               </div>
               <div className={`w-16 h-0.5 ${inboundStep >= 2 ? 'bg-primary' : 'bg-secondary'}`}></div>
               <div className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold ${
-                inboundStep >= 2 ? 'bg-primary text-foreground' : 'bg-secondary text-muted-foreground'
+                inboundStep >= 2 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
               }`}>
                 2
               </div>
               <div className={`w-16 h-0.5 ${inboundStep >= 3 ? 'bg-primary' : 'bg-secondary'}`}></div>
               <div className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold ${
-                inboundStep >= 3 ? 'bg-primary text-foreground' : 'bg-secondary text-muted-foreground'
+                inboundStep >= 3 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
               }`}>
                 ✓
               </div>
@@ -2108,7 +2108,7 @@ export default function PhoneSettingsDetailPage() {
               <button
                 onClick={handleCreateInboundTrunk}
                 disabled={isCreatingInbound || !inboundName || !inboundPhoneNumbers}
-                className="w-full h-11 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full h-11 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isCreatingInbound ? (
                   <>
@@ -2162,7 +2162,7 @@ export default function PhoneSettingsDetailPage() {
                 <button
                   onClick={handleCreateDispatchRule}
                   disabled={isCreatingInbound}
-                  className="flex-1 h-11 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 h-11 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isCreatingInbound ? (
                     <>
@@ -2277,7 +2277,7 @@ export default function PhoneSettingsDetailPage() {
               <button
                 onClick={handleSaveSettings}
                 disabled={isUpdating || !greetingMessage.trim()}
-                className="h-11 px-6 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-11 px-6 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUpdating ? "Saving..." : "Save Greeting Message"}
               </button>

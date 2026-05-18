@@ -93,7 +93,7 @@ export function AlertModal({ isOpen, onClose, title, message, type = "error" }: 
         <p className="text-foreground text-base">{message}</p>
         <button
           onClick={onClose}
-          className="w-full mt-4 px-4 py-2 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all"
+          className="w-full mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all"
         >
           OK
         </button>

@@ -50,14 +50,15 @@ export function WidgetLinkGenerator() {
   }
   
   // Generate embed code
-  const embedCode = `<!-- Aistein Chatbot Widget -->
+  const embedCode = `<!-- mammam-ia Chatbot Widget -->
 <script>
-  window.Aistein = {
+  window.Mammamia = {
     widgetId: "${widgetId}",
     collection: "${selectedCollection || ''}",
     position: "bottom-right",
-    primaryColor: "#6366f1"
+    primaryColor: "#111111"
   };
+  window.Aistein = window.Mammamia;
 </script>
 <script src="${typeof window !== 'undefined' ? window.location.origin : ''}/widget.js" defer></script>`;
 
@@ -115,7 +116,7 @@ export function WidgetLinkGenerator() {
         <div className="flex gap-3">
           <button
             onClick={() => copyToClipboard(widgetUrl, 'Widget link')}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all"
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copied ? 'Copied!' : 'Copy Link'}

@@ -75,7 +75,7 @@ export default function CampaignDetailsPage() {
           <p className="text-lg font-semibold text-foreground mb-2">Campaign not found</p>
           <button
             onClick={() => router.push('/campaigns')}
-            className="px-4 py-2 bg-primary text-white rounded-lg"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
           >
             Back to Campaigns
           </button>

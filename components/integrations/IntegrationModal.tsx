@@ -279,7 +279,7 @@ export function IntegrationModal({
                 <button
                   type="button"
                   onClick={handleAddProperty}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all"
                   disabled={isLoading}
                 >
                   <Plus className="w-4 h-4" />
@@ -418,7 +418,7 @@ export function IntegrationModal({
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-primary text-foreground font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
               {isLoading ? 'Saving...' : editingTool ? 'Update Integration' : 'Create Integration'}

@@ -255,7 +255,7 @@ export default function AnalyticsPage() {
                   className={cn(
                     "px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer",
                     isSelected
-                      ? "bg-primary text-white shadow-md scale-[1.02] transform"
+                      ? "bg-primary text-primary-foreground shadow-md scale-[1.02] transform"
                       : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                   )}
                 >

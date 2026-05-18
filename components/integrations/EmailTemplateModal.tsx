@@ -234,7 +234,7 @@ export function EmailTemplateModal({
               <textarea
                 value={bodyTemplate}
                 onChange={(e) => setBodyTemplate(e.target.value)}
-                placeholder="Dear {{customer_name}},\n\nYour appointment has been confirmed.\n\nDate: {{date}}\nTime: {{time}}\nNotes: {{notes}}\n\nBest regards,\nAistein Team"
+                placeholder="Dear {{customer_name}},\n\nYour appointment has been confirmed.\n\nDate: {{date}}\nTime: {{time}}\nNotes: {{notes}}\n\nBest regards,\nmammam-ia team"
                 rows={8}
                 className="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none font-mono text-sm"
                 disabled={createEmailTemplate.isPending}
@@ -254,7 +254,7 @@ export function EmailTemplateModal({
                 <button
                   type="button"
                   onClick={handleAddParameter}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all"
                   disabled={createEmailTemplate.isPending}
                 >
                   <Plus className="w-4 h-4" />
@@ -355,7 +355,7 @@ export function EmailTemplateModal({
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-primary text-foreground font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={createEmailTemplate.isPending}
             >
               {createEmailTemplate.isPending ? 'Creating...' : 'Create Template'}

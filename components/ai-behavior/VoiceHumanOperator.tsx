@@ -305,7 +305,7 @@ export function VoiceHumanOperator() {
                 console.error('Error saving voice human operator settings:', error);
               }
             }}
-            className="px-6 py-2 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all cursor-pointer"
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all cursor-pointer"
           >
             Save Configuration
           </button>

@@ -110,7 +110,7 @@ export default function AdminBillingPage() {
           <p className="text-red-500 mb-4">Failed to load billing overview</p>
           <button
             onClick={() => refetch()}
-            className="px-4 py-2 bg-primary text-white rounded-lg"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
           >
             Retry
           </button>

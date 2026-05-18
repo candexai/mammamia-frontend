@@ -3,7 +3,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bot } from "lucide-react";
+import { MammamiaLogo } from "@/components/brand/MammamiaLogo";
+import { BRAND_NAME_TITLE } from "@/lib/brand";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,13 +105,13 @@ export default function SignUpPage() {
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-primary/10 p-3">
-              <Bot className="h-8 w-8 text-primary" />
-            </div>
+            <MammamiaLogo size="lg" showWordmark={false} />
           </div>
-          <CardTitle className="text-2xl font-bold text-foreground">Create your account</CardTitle>
+          <CardTitle className="text-2xl font-bold text-foreground">
+            Join {BRAND_NAME_TITLE}
+          </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Sign up with Google or email and password
+            Create your {BRAND_NAME_TITLE} account with Google or email
           </CardDescription>
         </CardHeader>
 

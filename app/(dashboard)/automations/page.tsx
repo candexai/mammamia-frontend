@@ -282,7 +282,7 @@ export default function AutomationsPage() {
           </button>
           <button
             onClick={handleNewAutomation}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-primary/90 text-white rounded-xl text-sm font-bold hover:from-primary/90 hover:to-primary/80 hover:shadow-xl hover:shadow-primary/30 transition-all duration-200 shadow-lg shadow-primary/20"
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-xl text-sm font-bold hover:from-primary/90 hover:to-primary/80 hover:shadow-xl hover:shadow-primary/30 transition-all duration-200 shadow-lg shadow-primary/20"
           >
             <Plus className="w-4 h-4" />
             <span>New Automation</span>

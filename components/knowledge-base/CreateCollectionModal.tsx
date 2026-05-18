@@ -249,7 +249,7 @@ export function CreateCollectionModal({ isOpen, onClose }: CreateCollectionModal
             <button
               type="submit"
               disabled={isCreating || !name.trim() || (sourceType === 'text' && !textInput.trim()) || (sourceType === 'url' && !urlInput.trim()) || (sourceType === 'file' && !fileInput)}
-              className="flex items-center gap-2 px-6 py-2 bg-primary text-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isCreating && <Loader2 className="w-4 h-4 animate-spin" />}
               {isCreating ? 'Ingesting...' : 'Create Document'}
