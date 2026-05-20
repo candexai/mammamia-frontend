@@ -76,9 +76,17 @@ export interface BatchContactDetail {
   } | null;
 }
 
+export interface BatchJobDetailsPagination {
+  page: number;
+  page_size: number;
+  total_contacts: number;
+  total_pages: number;
+}
+
 export interface BatchJobDetailsResponse {
   batch: any;
   contacts: BatchContactDetail[];
+  pagination?: BatchJobDetailsPagination;
 }
 
 /**
@@ -222,9 +230,17 @@ class BatchCallingService {
    * Get complete per-contact details
    * GET /api/v1/batch-calling/:jobId/details
    */
-  async getBatchJobDetails(jobId: string): Promise<BatchJobDetailsResponse> {
+  async getBatchJobDetails(
+    jobId: string,
+    options?: { page?: number; page_size?: number }
+  ): Promise<BatchJobDetailsResponse> {
     try {
-      const response = await apiClient.get<{ success: boolean; data: BatchJobDetailsResponse }>(`/batch-calling/${jobId}/details`);
+      const params = new URLSearchParams();
+      if (options?.page != null) params.set('page', String(options.page));
+      if (options?.page_size != null) params.set('page_size', String(options.page_size));
+      const qs = params.toString();
+      const url = `/batch-calling/${jobId}/details${qs ? `?${qs}` : ''}`;
+      const response = await apiClient.get<{ success: boolean; data: BatchJobDetailsResponse }>(url);
       if (response && typeof response === 'object' && 'data' in response) {
         return (response as any).data;
       }
@@ -233,6 +249,20 @@ class BatchCallingService {
       console.error('❌ [BatchCallingService] getBatchJobDetails() error:', error);
       throw new Error(error.response?.data?.error?.message || error.message || 'Failed to get batch job details');
     }
+  }
+
+  async getBatchContactTranscript(
+    jobId: string,
+    conversationId: string
+  ): Promise<{ conversation_id: string; transcript: Array<{ role: string; message: string; timestamp?: string }> }> {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: { conversation_id: string; transcript: Array<{ role: string; message: string; timestamp?: string }> };
+    }>(`/batch-calling/${jobId}/contacts/${conversationId}/transcript`);
+    if (response && typeof response === 'object' && 'data' in response) {
+      return (response as any).data;
+    }
+    return response as any;
   }
 }
 

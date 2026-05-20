@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Phone, Clock, CheckCircle, XCircle, AlertCircle, X, RefreshCw, ChevronDown, ChevronUp, User, Mail, Calendar, ChevronLeft, ChevronRight, FileText } from "lucide-react";
-import { useBatchCalls, useCancelBatchJob, useResumeBatchJob, useRetryBatchJob, useBatchJobDetails } from "@/hooks/useBatchCalling";
+import { useBatchCalls, useCancelBatchJob, useResumeBatchJob, useRetryBatchJob, useBatchJobDetails, useBatchContactTranscript } from "@/hooks/useBatchCalling";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -355,11 +355,21 @@ interface BatchCallDetailsProps {
 
 function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
   const { t } = useTranslate();
-  const { data: detailsData, isLoading: detailsLoading } = useBatchJobDetails(batchCall.batch_call_id);
   const [selectedContactKey, setSelectedContactKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "transcript" | "metadata">("overview");
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 50;
+
+  const { data: detailsData, isLoading: detailsLoading, isFetching: detailsFetching } = useBatchJobDetails(
+    batchCall.batch_call_id,
+    { page: currentPage, page_size: pageSize }
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedContactKey(null);
+    setActiveTab("overview");
+  }, [batchCall.batch_call_id]);
 
   const formatDate = (unixTimestamp: number) => {
     return new Date(unixTimestamp * 1000).toLocaleString();
@@ -530,12 +540,13 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
   };
 
   const contacts = detailsData?.contacts || [];
-  const totalContacts = contacts.length;
-  const totalPages = Math.max(1, Math.ceil(totalContacts / pageSize));
-  const safePage = Math.min(currentPage, totalPages);
-  const startIndex = (safePage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalContacts);
-  const paginatedContacts = contacts.slice(startIndex, endIndex);
+  const pagination = detailsData?.pagination;
+  const totalContacts = pagination?.total_contacts ?? contacts.length;
+  const totalPages = pagination?.total_pages ?? 1;
+  const safePage = pagination?.page ?? currentPage;
+  const startIndex = totalContacts === 0 ? 0 : (safePage - 1) * (pagination?.page_size ?? pageSize) + 1;
+  const endIndex = Math.min(safePage * (pagination?.page_size ?? pageSize), totalContacts);
+  const paginatedContacts = contacts;
 
   const goToPrevPage = () => setCurrentPage((p) => Math.max(1, p - 1));
   const goToNextPage = () => setCurrentPage((p) => Math.min(totalPages, p + 1));
@@ -586,7 +597,17 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
     return contacts[0];
   })();
 
-  const selectedTranscript = normalizeTranscript(selectedContact?.transcript);
+  const selectedConversationId = selectedContact?.conversation_id || null;
+  const loadTranscript = activeTab === "transcript" && !!selectedConversationId;
+  const { data: transcriptData, isLoading: transcriptLoading } = useBatchContactTranscript(
+    batchCall.batch_call_id,
+    selectedConversationId,
+    loadTranscript
+  );
+
+  const selectedTranscript = normalizeTranscript(
+    transcriptData?.transcript ?? selectedContact?.transcript
+  );
 
   const PaginationBar = () => (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2">
@@ -711,10 +732,10 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
                 </span>
               )}
             </h5>
-            {totalContacts > pageSize && <PaginationBar />}
+            {totalPages > 1 && <PaginationBar />}
           </div>
 
-          {detailsLoading ? (
+          {(detailsLoading && !detailsData) ? (
             <div className="flex items-center justify-center py-8">
               <RefreshCw className="w-5 h-5 text-primary animate-spin" />
               <span className="ml-2 text-sm text-muted-foreground">Loading contact details...</span>
@@ -729,6 +750,12 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
                   <span className="text-right">Duration</span>
                 </div>
                 <div className="max-h-[520px] overflow-y-auto">
+                  {detailsFetching && (
+                    <div className="px-4 py-2 text-xs text-muted-foreground flex items-center gap-2 border-b border-border/70">
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      Updating page...
+                    </div>
+                  )}
                   {paginatedContacts.map((call: any, index: number) => {
                     const rowKey = call.conversation_id || call.phone_number || `${safePage}_${index}`;
                     const isSelected = (selectedContact?.conversation_id || selectedContact?.phone_number) === (call.conversation_id || call.phone_number);
@@ -848,7 +875,12 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
 
                       {activeTab === "transcript" && (
                         <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
-                          {selectedTranscript.length > 0 ? selectedTranscript.map((row, idx) => (
+                          {transcriptLoading ? (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              Loading transcript...
+                            </div>
+                          ) : selectedTranscript.length > 0 ? selectedTranscript.map((row, idx) => (
                             <div
                               key={`${row.speaker}_${idx}`}
                               className={cn(
@@ -880,7 +912,7 @@ function BatchCallDetails({ batchCall }: BatchCallDetailsProps) {
                 )}
               </div>
             </div>
-            {totalContacts > pageSize && <PaginationBar />}
+            {totalPages > 1 && <PaginationBar />}
             </>
           ) : (
             <div className="rounded-lg bg-muted/40 border border-border p-4 text-sm text-muted-foreground space-y-2">

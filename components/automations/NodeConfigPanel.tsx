@@ -12,8 +12,8 @@ import { useAgents } from "@/hooks/useAgents";
 import { usePhoneNumbersList } from "@/hooks/usePhoneNumber";
 import { automationService } from "@/services/automation.service";
 import {
-  EXTRACT_APPOINTMENT_DEFAULT_JSON,
-  EXTRACT_APPOINTMENT_DEFAULT_PROMPT,
+  getExtractAppointmentDefaults,
+  isInboundCallAutomation,
   mergeSchemaForExtractAppointmentNode,
 } from "@/utils/extractAppointmentSchema";
 
@@ -122,6 +122,16 @@ export function NodeConfigPanel({
   const [activeSheetMappingIndex, setActiveSheetMappingIndex] = useState<number | null>(null);
   const [isWideLayout, setIsWideLayout] = useState(false);
 
+  const isInboundCallWorkflow = useMemo(
+    () => isInboundCallAutomation(allNodes || []),
+    [allNodes]
+  );
+
+  const extractAppointmentDefaults = useMemo(
+    () => getExtractAppointmentDefaults(isInboundCallWorkflow),
+    [isInboundCallWorkflow]
+  );
+
   const selectedExtractJsonExample = useMemo(() => {
     const extractNodes = (allNodes || []).filter(
       (n) => n.service === "aistein_extract_data" || n.service === "aistein_extract_appointment"
@@ -225,6 +235,28 @@ export function NodeConfigPanel({
       }
     }
   }, [jsonExampleKey, node.service, node.config.json_example]);
+
+  // Inbound workflows: seed extract-appointment prompt + JSON (includes name) when node is empty
+  useEffect(() => {
+    if (node.service !== "aistein_extract_appointment" || !isInboundCallWorkflow) return;
+    const hasPrompt =
+      typeof node.config.extraction_prompt === "string" &&
+      node.config.extraction_prompt.trim().length > 0;
+    const hasJson =
+      typeof node.config.json_example === "object" &&
+      node.config.json_example !== null &&
+      !Array.isArray(node.config.json_example) &&
+      Object.keys(node.config.json_example as object).length > 0;
+    if (hasPrompt && hasJson) return;
+    onUpdate({
+      ...node.config,
+      extraction_prompt: hasPrompt
+        ? node.config.extraction_prompt
+        : extractAppointmentDefaults.extraction_prompt,
+      json_example: hasJson ? node.config.json_example : extractAppointmentDefaults.json_example,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node.id, node.service, isInboundCallWorkflow]);
 
   useEffect(() => {
     // Fetch lists for contact moved trigger or batch call
@@ -1341,7 +1373,8 @@ export function NodeConfigPanel({
                           node.service === "aistein_extract_appointment"
                             ? mergeSchemaForExtractAppointmentNode(
                                 result?.extraction_prompt ?? "",
-                                (result?.json_example ?? {}) as Record<string, unknown>
+                                (result?.json_example ?? {}) as Record<string, unknown>,
+                                { inbound: isInboundCallWorkflow }
                               )
                             : {
                                 extraction_prompt: result?.extraction_prompt ?? "",
@@ -1390,7 +1423,8 @@ export function NodeConfigPanel({
                             node.service === "aistein_extract_appointment"
                               ? mergeSchemaForExtractAppointmentNode(
                                   result?.extraction_prompt ?? "",
-                                  (result?.json_example ?? {}) as Record<string, unknown>
+                                  (result?.json_example ?? {}) as Record<string, unknown>,
+                                  { inbound: isInboundCallWorkflow }
                                 )
                               : {
                                   extraction_prompt: result?.extraction_prompt ?? "",
@@ -1464,7 +1498,7 @@ export function NodeConfigPanel({
                   className="w-full min-h-[120px] font-mono text-sm bg-secondary border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors resize-y"
                   placeholder={
                     node.service === "aistein_extract_appointment"
-                      ? JSON.stringify(EXTRACT_APPOINTMENT_DEFAULT_JSON, null, 2)
+                      ? JSON.stringify(extractAppointmentDefaults.json_example, null, 2)
                       : '{"interested_in_loan": true, "product": "Home insurance", "amount_eur": 250, "customer_name": "", "city": "", "country": ""}'
                   }
                 />
