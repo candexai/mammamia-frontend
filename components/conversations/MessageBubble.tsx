@@ -54,10 +54,10 @@ export function MessageBubble({
       <div className={cn("flex flex-col", isCustomer ? "items-start" : "items-end", "max-w-[70%]")}>
         <div
           className={cn(
-            "px-4 py-3 text-foreground text-sm",
+            "px-4 py-3 text-sm",
             isCustomer
-              ? "bg-secondary rounded-[12px_12px_12px_4px]"
-              : "bg-primary rounded-[12px_12px_4px_12px]"
+              ? "bg-secondary text-secondary-foreground rounded-[12px_12px_12px_4px]"
+              : "bg-foreground text-background rounded-[12px_12px_4px_12px]"
           )}
         >
           {message.content}
@@ -95,14 +95,34 @@ export function MessageBubble({
                         href={attachment.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity"
+                        className={cn(
+                          "flex items-center gap-2 text-sm hover:opacity-80 transition-opacity",
+                          isCustomer ? "text-secondary-foreground" : "text-background"
+                        )}
                       >
-                        <Paperclip className="w-4 h-4 text-muted-foreground" />
+                        <Paperclip
+                          className={cn(
+                            "w-4 h-4",
+                            isCustomer ? "text-muted-foreground" : "text-background/80"
+                          )}
+                        />
                         <div className="flex-1 min-w-0">
-                          <p className="text-foreground truncate">{attachment.filename}</p>
-                          <p className="text-xs text-muted-foreground">{fileSizeKB} KB</p>
+                          <p className="truncate">{attachment.filename}</p>
+                          <p
+                            className={cn(
+                              "text-xs",
+                              isCustomer ? "text-muted-foreground" : "text-background/80"
+                            )}
+                          >
+                            {fileSizeKB} KB
+                          </p>
                         </div>
-                        <Download className="w-4 h-4 text-muted-foreground" />
+                        <Download
+                          className={cn(
+                            "w-4 h-4",
+                            isCustomer ? "text-muted-foreground" : "text-background/80"
+                          )}
+                        />
                       </a>
                     )}
                   </div>
@@ -114,9 +134,14 @@ export function MessageBubble({
         
         {/* Timestamp and translate button */}
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs text-muted-foreground">{formatTime(message.timestamp)}</span>
+          <span className="text-xs text-zinc-600 dark:text-zinc-400">
+            {formatTime(message.timestamp)}
+          </span>
           {isCustomer && (
-            <button className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+            <button
+              type="button"
+              className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+            >
               Translate
             </button>
           )}

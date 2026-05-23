@@ -72,7 +72,7 @@ export function ManualControlPanel({
       <div className="border-t border-border p-4">
         <button
           onClick={onTakeControl}
-          className="w-full h-11 bg-primary rounded-lg text-foreground text-sm font-medium hover:brightness-110 transition-all"
+          className="w-full h-11 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-all"
         >
           Take Control
         </button>
@@ -215,7 +215,7 @@ export function ManualControlPanel({
           <button
             onClick={handleSend}
             disabled={!message.trim() && selectedFiles.length === 0}
-            className="px-5 py-2.5 bg-primary rounded-lg text-foreground text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Send
           </button>

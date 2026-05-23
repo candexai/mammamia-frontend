@@ -853,7 +853,7 @@ export function ConversationDetail({
               </span>
               {/* @ts-ignore */}
               {conversation.transcript && (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-gray-600 dark:text-muted-foreground">
                   {/* @ts-ignore */}
                   ({Array.isArray(conversation.transcript) ? conversation.transcript.length : 
                     // @ts-ignore
@@ -935,7 +935,7 @@ export function ConversationDetail({
                               {isCustomer ? 'Customer' : 'Agent'}
                             </span>
                             {item.timestamp && (
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-gray-600 dark:text-muted-foreground">
                                 {new Date(item.timestamp).toLocaleTimeString()}
                               </span>
                             )}

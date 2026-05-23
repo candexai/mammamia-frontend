@@ -29,8 +29,8 @@ export function MessageThread({
 
       {/* Status badge */}
       <div className="flex justify-center my-4">
-        <div className="bg-secondary px-3 py-2 rounded-2xl">
-          <span className="text-[13px] text-muted-foreground">
+        <div className="bg-secondary border border-border px-3 py-2 rounded-2xl">
+          <span className="text-[13px] text-zinc-600 dark:text-zinc-400">
             🤖 mammam-ia is managing this conversation
           </span>
         </div>

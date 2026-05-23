@@ -59,7 +59,7 @@
   --secondary: #f3f4f6;
   --secondary-foreground: #111111;
   --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
+  --muted-foreground: #52525b;
   --accent: #f3f4f6;
   --accent-foreground: #111111;
   --destructive: #ef4444;
@@ -124,9 +124,12 @@
   }
 }
 
-/* Dark mode: primary is white — always pair with dark label text */
+/* primary inverts by theme (black in light, white in dark) — never pair bg-primary with text-foreground */
 @layer components {
   .bg-primary {
+    color: var(--primary-foreground);
+  }
+  .bg-primary.text-foreground {
     color: var(--primary-foreground);
   }
   .bg-primary svg:not([class*="text-"]) {
