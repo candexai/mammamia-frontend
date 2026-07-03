@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 
-const INTEGRATION_API_URL = process.env.NEXT_PUBLIC_INTEGRATION_API_URL || 'https://keplerov1-python-2.onrender.com';
+const INTEGRATION_API_URL = process.env.NEXT_PUBLIC_INTEGRATION_API_URL || 'https://chatbot.candexai.co.in';
 
 class IntegrationService {
   private api: AxiosInstance;

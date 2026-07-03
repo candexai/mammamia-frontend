@@ -585,7 +585,7 @@ export default function PhoneSettingsDetailPage() {
         return;
       }
       
-      const API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'https://keplerov1-python-2.onrender.com';
+      const API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'https://chatbot.candexai.co.in';
       const url = `${API_URL}/calls/create-inbound-trunk`;
       const requestBody = {
         name: inboundName.trim(),
@@ -714,7 +714,7 @@ export default function PhoneSettingsDetailPage() {
         console.error('⚠️ [Inbound Trunk] This appears to be a server-side error. Please check:');
         console.error('  1. Python API server is running and accessible');
         console.error('  2. Python API logs for detailed error information');
-        console.error('  3. Network connectivity to:', process.env.NEXT_PUBLIC_PYTHON_API_URL || 'https://keplerov1-python-2.onrender.com');
+        console.error('  3. Network connectivity to:', process.env.NEXT_PUBLIC_PYTHON_API_URL || 'https://chatbot.candexai.co.in');
       }
     } finally {
       setIsCreatingInbound(false);
@@ -730,7 +730,7 @@ export default function PhoneSettingsDetailPage() {
 
     setIsCreatingInbound(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'https://keplerov1-python-2.onrender.com';
+      const API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'https://chatbot.candexai.co.in';
       
       // Build URL with query parameters
       const queryParams = new URLSearchParams({
@@ -883,7 +883,7 @@ export default function PhoneSettingsDetailPage() {
         console.error('⚠️ [Dispatch Rule] This appears to be a server-side error. Please check:');
         console.error('  1. Python API server is running and accessible');
         console.error('  2. Python API logs for detailed error information');
-        console.error('  3. Network connectivity to:', process.env.NEXT_PUBLIC_PYTHON_API_URL || 'https://keplerov1-python-2.onrender.com');
+        console.error('  3. Network connectivity to:', process.env.NEXT_PUBLIC_PYTHON_API_URL || 'https://chatbot.candexai.co.in');
       }
     } finally {
       setIsCreatingInbound(false);

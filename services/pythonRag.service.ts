@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const PYTHON_RAG_URL = process.env.NEXT_PUBLIC_RAG_API_URL || 'https://keplerov1-python-2.onrender.com';
+const PYTHON_RAG_URL = process.env.NEXT_PUBLIC_RAG_API_URL || 'https://chatbot.candexai.co.in';
 
 export interface CreateCollectionRequest {
   collection_name: string;

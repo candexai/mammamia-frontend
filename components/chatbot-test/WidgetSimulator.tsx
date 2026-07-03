@@ -166,7 +166,7 @@ export function WidgetSimulator() {
       const errorMessage = {
         id: (Date.now() + 1).toString(),
         sender: "bot" as const,
-        content: `Error: ${error.message}. Please ensure Python RAG service is accessible at https://keplerov1-python-2.onrender.com`,
+        content: `Error: ${error.message}. Please ensure Python RAG service is accessible at https://chatbot.candexai.co.in`,
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMessage]);
