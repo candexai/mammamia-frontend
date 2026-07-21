@@ -206,6 +206,10 @@ class SocketClient {
     this.socket?.on('notification:new', callback);
   }
 
+  offNotification(callback: (notification: any) => void): void {
+    this.socket?.off('notification:new', callback);
+  }
+
   /**
    * Listen for conversation assignment
    */

@@ -148,3 +148,45 @@ export const DEBOUNCE_DELAY = 300; // ms
 export const TOAST_DURATION = 3000; // ms
 export const ANIMATION_DURATION = 200; // ms
 
+// Support Center
+export const TICKET_CATEGORIES = [
+  { value: "bug_report", label: "Bug Report" },
+  { value: "feature_request", label: "Feature Request" },
+  { value: "billing", label: "Billing" },
+  { value: "integration", label: "Integration" },
+  { value: "voice_agent", label: "Voice Agent" },
+  { value: "knowledge_base", label: "Knowledge Base" },
+  { value: "ai_response", label: "AI Response" },
+  { value: "performance", label: "Performance" },
+  { value: "api", label: "API" },
+  { value: "authentication", label: "Authentication" },
+  { value: "other", label: "Other" },
+] as const;
+
+export const TICKET_PRIORITIES = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "critical", label: "Critical" },
+] as const;
+
+export const TICKET_STATUSES = [
+  { value: "pending", label: "Pending" },
+  { value: "in_review", label: "In Review" },
+  { value: "working", label: "Working" },
+  { value: "waiting_for_user", label: "Waiting for User" },
+  { value: "resolved", label: "Resolved" },
+  { value: "closed", label: "Closed" },
+  { value: "rejected", label: "Rejected" },
+] as const;
+
+export const TICKET_STATUS_COLORS: Record<string, string> = {
+  pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  in_review: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  working: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  waiting_for_user: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  resolved: "bg-green-500/20 text-green-400 border-green-500/30",
+  closed: "bg-slate-500/20 text-slate-400 border-slate-500/30",
+  rejected: "bg-red-500/20 text-red-400 border-red-500/30",
+};
+

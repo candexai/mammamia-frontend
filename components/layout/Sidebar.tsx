@@ -18,6 +18,7 @@ import {
   Globe,
   Cog,
   CreditCard,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/contexts/SidebarContext";
@@ -49,6 +50,7 @@ const mainNavItems: NavItem[] = [
 ];
 
 const bottomNavItems: NavItem[] = [
+  { icon: HelpCircle, label: "Help & Support", href: "/help" },
   { icon: User, label: "Profile", href: "/profile" },
 ];
 
