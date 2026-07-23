@@ -193,11 +193,18 @@ export function NodeConfigPanel({
   const [suggestingFromAgent, setSuggestingFromAgent] = useState(false);
 
   // Sync spreadsheet UI state only when switching to a different node.
-  // Do not depend on node.config.spreadsheetId — updating the link would clear local state before the parent applies the new id.
+  // Restore link/name/tab so a previously saved sheet still renders when reopening.
   useEffect(() => {
-    const spreadsheetId = node.config.spreadsheetId || "";
+    const spreadsheetId = String(node.config.spreadsheetId || "").trim();
+    const savedUrl = String(node.config.spreadsheetUrl || "").trim();
+    const savedSource = node.config.sheetSource === "drive" ? "drive" : "url";
+
     setSelectedSpreadsheetId(spreadsheetId);
-    setSpreadsheetLink("");
+    setSpreadsheetLink(
+      savedUrl ||
+        (spreadsheetId ? `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit` : "")
+    );
+    setSheetSourceTab(spreadsheetId ? savedSource : "url");
     setSheetHeaders([]);
     setHeadersError(null);
     setActiveSheetMappingIndex(null);
@@ -281,11 +288,11 @@ export function NodeConfigPanel({
 
     // Fetch Google Sheets spreadsheets when configuring Google Sheets action
     if (isGoogleSheetsAppend) {
-      loadSpreadsheets();
+      loadSpreadsheets({ quiet: true });
     }
   }, [node.service]);
 
-  const loadSpreadsheets = async () => {
+  const loadSpreadsheets = async (opts?: { quiet?: boolean }) => {
     try {
       setLoadingSpreadsheets(true);
       const response = await apiClient.get('/integrations/google/sheets/list');
@@ -305,10 +312,14 @@ export function NodeConfigPanel({
           console.warn('Selected spreadsheet no longer exists:', selectedSpreadsheetId);
         }
 
-        if (validSpreadsheets.length > 0) {
-          toast.success(`Loaded ${validSpreadsheets.length} spreadsheet${validSpreadsheets.length > 1 ? 's' : ''}`);
+        if (!opts?.quiet) {
+          if (validSpreadsheets.length > 0) {
+            toast.success(`Loaded ${validSpreadsheets.length} spreadsheet${validSpreadsheets.length > 1 ? 's' : ''}`);
+          } else {
+            toast.info('No spreadsheets found. Create a Google Sheet to get started.');
+          }
         }
-      } else {
+      } else if (!opts?.quiet) {
         toast.info('No spreadsheets found. Create a Google Sheet to get started.');
       }
     } catch (error: any) {
@@ -321,14 +332,21 @@ export function NodeConfigPanel({
   };
 
   const handleSpreadsheetSelect = (spreadsheetId: string) => {
+    const selected = spreadsheets.find((s: any) => s.id === spreadsheetId);
+    const spreadsheetUrl = spreadsheetId
+      ? `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`
+      : "";
     setSelectedSpreadsheetId(spreadsheetId);
-    // Clear link input when selecting from dropdown
-    setSpreadsheetLink("");
+    setSpreadsheetLink(spreadsheetUrl);
+    setSheetSourceTab("drive");
     // Ensure sheetName is set if not already present
     const sheetName = node.config.sheetName || "Sheet1";
     onUpdate({
       ...node.config,
       spreadsheetId,
+      spreadsheetUrl,
+      spreadsheetName: selected?.name || node.config.spreadsheetName || "",
+      sheetSource: "drive",
       sheetName
     });
   };
@@ -381,17 +399,19 @@ export function NodeConfigPanel({
 
   const handleSpreadsheetLinkChange = (link: string) => {
     setSpreadsheetLink(link);
+    setSheetSourceTab("url");
 
     // Extract spreadsheetId from URL
     const extractedId = extractSpreadsheetIdFromUrl(link);
 
     if (extractedId) {
       setSelectedSpreadsheetId(extractedId);
-      // Clear dropdown selection when using link
       const sheetName = node.config.sheetName || "Sheet1";
       onUpdate({
         ...node.config,
         spreadsheetId: extractedId,
+        spreadsheetUrl: link.trim(),
+        sheetSource: "url",
         sheetName
       });
     } else if (link.trim() === "") {
@@ -400,6 +420,9 @@ export function NodeConfigPanel({
       onUpdate({
         ...node.config,
         spreadsheetId: "",
+        spreadsheetUrl: "",
+        spreadsheetName: "",
+        sheetSource: "url",
         sheetName: node.config.sheetName || "Sheet1"
       });
     }
@@ -647,6 +670,20 @@ export function NodeConfigPanel({
         config.spreadsheetId = formSpreadsheetId;
       }
 
+      const linkForSave =
+        (spreadsheetLink && extractSpreadsheetIdFromUrl(spreadsheetLink) ? spreadsheetLink.trim() : "") ||
+        (formSpreadsheetId ? `https://docs.google.com/spreadsheets/d/${formSpreadsheetId}/edit` : "");
+      if (linkForSave) {
+        config.spreadsheetUrl = linkForSave;
+      }
+      const matchedName = spreadsheets.find((s: any) => s.id === formSpreadsheetId)?.name;
+      if (matchedName) {
+        config.spreadsheetName = matchedName;
+      } else if (!config.spreadsheetName && node.config.spreadsheetName) {
+        config.spreadsheetName = node.config.spreadsheetName;
+      }
+      config.sheetSource = sheetSourceTab;
+
       // Ensure sheetName is set (default to "Sheet1")
       const sheetNameStr = typeof config.sheetName === 'string' ? config.sheetName : String(config.sheetName || '');
       if (!sheetNameStr || sheetNameStr.trim() === "") {
@@ -681,6 +718,9 @@ export function NodeConfigPanel({
       return {
         ...config,
         spreadsheetId: config.spreadsheetId as string,
+        spreadsheetUrl: config.spreadsheetUrl as string,
+        spreadsheetName: config.spreadsheetName as string,
+        sheetSource: config.sheetSource as "url" | "drive",
         sheetName: config.sheetName as string,
         // DO NOT set range here - keep original range from config
         values: config.values as string[]
@@ -2756,7 +2796,7 @@ export function NodeConfigPanel({
                     <div className="flex items-center justify-end mb-1.5">
                       <button
                         type="button"
-                        onClick={loadSpreadsheets}
+                        onClick={() => loadSpreadsheets()}
                         disabled={loadingSpreadsheets}
                         className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                       >
@@ -2778,13 +2818,19 @@ export function NodeConfigPanel({
                         <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">Loading spreadsheets...</span>
                       </div>
-                    ) : spreadsheets.length > 0 ? (
+                    ) : spreadsheets.length > 0 || resolvedSpreadsheetId ? (
                       <select
-                        value={selectedSpreadsheetId && !spreadsheetLink ? selectedSpreadsheetId : ""}
+                        value={selectedSpreadsheetId || resolvedSpreadsheetId || ""}
                         onChange={(e) => handleSpreadsheetSelect(e.target.value)}
                         className="w-full h-10 bg-secondary border border-border rounded-lg px-3 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
                       >
                         <option value="">Select a spreadsheet...</option>
+                        {resolvedSpreadsheetId &&
+                          !spreadsheets.find((s: any) => s.id === resolvedSpreadsheetId) && (
+                            <option value={resolvedSpreadsheetId}>
+                              {String(node.config.spreadsheetName || "Selected spreadsheet")}
+                            </option>
+                          )}
                         {spreadsheets.map((sheet: any) => (
                           <option key={sheet.id} value={sheet.id}>
                             {sheet.name}
@@ -2800,6 +2846,24 @@ export function NodeConfigPanel({
                         </p>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {resolvedSpreadsheetId && (
+                  <div className="p-2.5 rounded-lg border border-green-500/25 bg-green-500/10">
+                    <p className="text-xs text-green-700 dark:text-green-400 flex items-start gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                      <span>
+                        <span className="font-medium">
+                          {spreadsheets.find((s: any) => s.id === resolvedSpreadsheetId)?.name ||
+                            String(node.config.spreadsheetName || "Spreadsheet selected")}
+                        </span>
+                        <span className="block text-[11px] opacity-80 mt-0.5 break-all">
+                          {spreadsheetLink ||
+                            `https://docs.google.com/spreadsheets/d/${resolvedSpreadsheetId}/edit`}
+                        </span>
+                      </span>
+                    </p>
                   </div>
                 )}
 
@@ -2823,8 +2887,7 @@ export function NodeConfigPanel({
                 )}
                 {resolvedSpreadsheetId &&
                   spreadsheets.length > 0 &&
-                  !spreadsheets.find((s: any) => s.id === resolvedSpreadsheetId) &&
-                  !spreadsheetLink && (
+                  !spreadsheets.find((s: any) => s.id === resolvedSpreadsheetId) && (
                     <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                       <p className="text-xs text-yellow-700 dark:text-yellow-400 flex items-center gap-1">
                         <AlertCircle className="w-3 h-3 flex-shrink-0" />
@@ -3409,6 +3472,9 @@ export function NodeConfigPanel({
                 const configToSave: AutomationNode["config"] = {
                   ...finalConfig,
                   spreadsheetId: finalConfig.spreadsheetId as string,
+                  spreadsheetUrl: (finalConfig.spreadsheetUrl as string) || "",
+                  spreadsheetName: (finalConfig.spreadsheetName as string) || "",
+                  sheetSource: (finalConfig.sheetSource as "url" | "drive") || sheetSourceTab,
                   sheetName: finalConfig.sheetName as string || "Sheet1",
                   // DO NOT modify range - keep original range from finalConfig
                   // Range is handled by backend/defaults and should not be overridden here
